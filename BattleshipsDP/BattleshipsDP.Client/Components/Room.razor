@@ -1,0 +1,55 @@
+﻿@if(CurrentRoom is not null)
+{
+    <h3>@CurrentRoom.RoomName</h3>
+
+    if (CurrentRoom.Players.Count < 4)
+    {
+        <h4>Waiting for more players to join...</h4>
+    }
+
+    if ((!CurrentRoom.Game.GameStarted || CurrentRoom.Game.GameOver)
+        && CurrentRoom.Game.ATeamPlayer1Id == myPlayerId
+        && CurrentRoom.Players.Count == 4) 
+    {
+        <button @onclick="StartGame">Start Game</button>
+    }
+
+
+}
+
+@code {
+    private string? myPlayerId;
+    [CascadingParameter]
+    public HubConnection? HubConnection { get; set; }
+    [Parameter]
+    public GameRoom? CurrentRoom { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (CurrentRoom is null || HubConnection is null ||
+        HubConnection.ConnectionId is null)
+            return;
+
+        myPlayerId = HubConnection.ConnectionId;
+
+        HubConnection.On<Player>("PlayerJoined", newPlayer =>
+        {
+            CurrentRoom.TryAddPlayer(newPlayer);
+            StateHasChanged();
+        });
+
+        HubConnection.On<GameRoom>("UpdateGame", serverRoom =>
+        {
+            CurrentRoom = serverRoom;
+            StateHasChanged();
+        });
+    }
+
+    async Task StartGame()
+    {
+        if (HubConnection is null || CurrentRoom is null)
+            return;
+
+        await HubConnection.InvokeAsync("StartGame", CurrentRoom.RoomId);
+    }
+}

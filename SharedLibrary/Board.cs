@@ -1,0 +1,140 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace SharedLibrary
+{
+    public class Board
+    {
+        public int Size { get; set; }
+        public Square[,] Grid { get; set; }
+        public List<Ship> Ships { get; set; }
+        private Random random = new Random();
+
+        public Board(int size = 10)
+        {
+            Size = size;
+            Grid = new Square[Size, Size];
+            Ships = new List<Ship>();
+
+            // Initialize the grid with Square.Empty
+            InitializeGrid();
+        }
+
+        private void InitializeGrid()
+        {
+            for (int row = 0; row < Size; row++)
+                for (int col = 0; col < Size; col++)
+                    Grid[row, col] = Square.Empty;
+        }
+
+        public bool AllShipsDestroyed()
+        {
+            return Ships.Any(p => !p.IsDestroyed());
+        }
+
+        // Method to place a ship on the board using the appropriate enum
+        public bool PlaceShip(Ship ship, List<(int, int)> coordinates)
+        {
+            foreach (var coord in coordinates)
+            {
+                if (Grid[coord.Item1, coord.Item2] != Square.Empty)
+                    return false; // Cannot place ship on an already occupied space
+            }
+
+            ship.Place(coordinates);
+            Ships.Add(ship);
+
+            // Mark the board where the ship is placed
+            foreach (var coord in coordinates)
+                Grid[coord.Item1, coord.Item2] = Square.Ship;
+
+            return true;
+        }
+
+        // Randomly place ships on the board (both horizontally and vertically)
+        public void RandomlyPlaceShips(List<(Ship, Square)> shipTypes)
+        {
+            foreach (var shipType in shipTypes)
+            {
+                bool placed = false;
+
+                while (!placed)
+                {
+                    // Randomly choose orientation: 0 = horizontal, 1 = vertical
+                    bool isHorizontal = random.Next(0, 2) == 0;
+
+                    // Generate random starting coordinates
+                    int row = random.Next(0, Size);
+                    int col = random.Next(0, Size);
+
+                    // Try placing the ship
+                    placed = TryPlaceShip(shipType.Item1, row, col, isHorizontal, shipType.Item2);
+                }
+            }
+        }
+
+        // Helper method to try placing a ship at a given starting position and orientation
+        private bool TryPlaceShip(Ship ship, int startRow, int startCol, bool isHorizontal, Square shipType)
+        {
+            List<(int, int)> coordinates = new List<(int, int)>();
+
+            // Calculate the ship's coordinates
+            for (int i = 0; i < ship.Size; i++)
+            {
+                int row = isHorizontal ? startRow : startRow + i;
+                int col = isHorizontal ? startCol + i : startCol;
+
+                // Check if the ship would be out of bounds
+                if (row >= Size || col >= Size || Grid[row, col] != Square.Empty)
+                {
+                    return false; // Invalid position
+                }
+
+                coordinates.Add((row, col));
+            }
+
+            // Place the ship on the board if it's a valid position
+            return PlaceShip(ship, coordinates);
+        }
+
+
+
+
+
+        // Method to fire at a specific coordinate on the board
+        public bool Fire(int row, int col)
+        {
+            if (Grid[row, col] == Square.Ship)
+            {
+                Grid[row, col] = Square.Hit; // Mark hit
+                foreach (var ship in Ships)
+                {
+                    if (ship.Hit(row, col))
+                        break;
+                }
+                return true; // Hit
+            }
+            else if (Grid[row, col] == Square.Empty)
+            {
+                Grid[row, col] = Square.Miss; // Mark miss
+            }
+            return false; // Miss
+        }
+
+        // Display the board
+        public void Display()
+        {
+            for (int row = 0; row < Size; row++)
+            {
+                for (int col = 0; col < Size; col++)
+                {
+                    Console.Write(Grid[row, col].GetDescription() + " ");
+                }
+                Console.WriteLine();
+            }
+        }
+    }
+}
