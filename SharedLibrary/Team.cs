@@ -8,15 +8,51 @@ namespace SharedLibrary
 {
     public class Team
     {
+        private bool hasLost { get; set; }
+        private bool turn { get; set; }
+        private Board board { get; set; }
         public string Name { get; set; }
         public Board Board { get; set; }
         public List<Player> Players { get; set; }
 
-        public Team(string name)
+        public Team() {
+            hasLost = false;
+            turn = false;
+            board = new Board();
+        }
+
+        public bool HasLost
+        { get
+            {  
+                return hasLost;
+            }
+        }
+        
+        public Board Board
         {
-            Name = name;
-            Board = new Board();
-            Players = new List<Player>();
+            get
+            {
+                return board;
+            }
+            set
+            {
+                this.board = value;
+            }
+        }
+        
+        public void Lost()
+        {
+           this.hasLost = true;
+        }
+
+        public bool IsTurn()
+        {
+            return turn;
+        }
+
+        public void Turn(bool switcher)
+        {
+            turn = switcher;
         }
     }
 }
