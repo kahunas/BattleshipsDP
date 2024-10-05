@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -100,10 +101,6 @@ namespace SharedLibrary
             return PlaceShip(ship, coordinates);
         }
 
-
-
-
-
         // Method to fire at a specific coordinate on the board
         public bool Fire(int row, int col)
         {
@@ -135,6 +132,16 @@ namespace SharedLibrary
                 }
                 Console.WriteLine();
             }
+        }
+    }
+
+    public static class SquareExtensions
+    {
+        public static string GetDescription(this Square square)
+        {
+            var field = square.GetType().GetField(square.ToString());
+            var attribute = (DescriptionAttribute)Attribute.GetCustomAttribute(field, typeof(DescriptionAttribute));
+            return attribute == null ? square.ToString() : attribute.Description;
         }
     }
 }

@@ -1,42 +1,91 @@
 ﻿@page "/battle"
 
+@using SharedLibrary
+@inject NavigationManager Navigation
+
 <h3>Battle</h3>
 
-<div class="grid-container">
-    <!-- Column Headers -->
-    <div class="grid-header"></div> <!-- Empty top-left corner -->
-    @for (char col = 'A'; col < 'A' + 10; col++)
-    {
-        <div class="grid-header">@col</div>
-    }
+<div class="tables-container">
+    <div class="table-wrapper">
+        <h4>Team Table</h4>
+        <div class="grid-container">
+            <!-- Column Headers -->
+            <div class="grid-header"></div> <!-- Empty top-left corner -->
+            @for (char col = 'A'; col < 'A' + teamBoard.Size; col++)
+            {
+                <div class="grid-header">@col</div>
+            }
 
-    @for (int row = 1; row <= 10; row++)
-    {
-        <!-- Row Header -->
-        <div class="grid-header">@row</div>
-        @for (int col = 0; col < 10; col++)
-        {
-            <div class="grid-item"></div>
-        }
-    }
+            @for (int row = 0; row < teamBoard.Size; row++)
+            {
+                <!-- Row Header -->
+                <div class="grid-header">@row</div>
+                @for (int col = 0; col < teamBoard.Size; col++)
+                {
+                    <div class="grid-item">@teamBoard.Grid[row, col].GetDescription()</div>
+                }
+            }
+        </div>
+    </div>
+
+    <div class="fire-button-wrapper">
+        <button class="fire-button" @onclick="PlaceShips">Place Ships Randomly</button>
+    </div>
+
+
+    <div class="table-wrapper">
+        <h4>Enemy Table</h4>
+        <div class="grid-container">
+            <!-- Column Headers -->
+            <div class="grid-header"></div> <!-- Empty top-left corner -->
+            @for (char col = 'A'; col < 'A' + enemyBoard.Size; col++)
+            {
+                <div class="grid-header">@col</div>
+            }
+
+            @for (int row = 0; row < enemyBoard.Size; row++)
+            {
+                <!-- Row Header -->
+                <div class="grid-header">@row</div>
+                @for (int col = 0; col < enemyBoard.Size; col++)
+                {
+                    <div class="grid-item">@enemyBoard.Grid[row, col].GetDescription()</div>
+                }
+            }
+        </div>
+    </div>
 </div>
 
 <style>
+    .tables-container {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        margin: auto;
+        max-width: 1200px;
+        gap: 30px;
+    }
+
+    .table-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
     .grid-container {
         display: grid;
         grid-template-columns: repeat(11, 1fr);
         gap: 1px;
         width: 100%;
-        max-width: 550px;
-        margin: auto;
+        max-width: 420px;
     }
 
     .grid-header {
         background-color: #d0d0d0;
         border: 1px solid #ccc;
         text-align: center;
-        padding: 20px;
-        font-size: 14px;
+        padding: 15px;
+        font-size: 12px;
         font-weight: bold;
     }
 
@@ -44,11 +93,55 @@
         background-color: #f0f0f0;
         border: 1px solid #ccc;
         text-align: center;
-        padding: 20px;
-        font-size: 14px;
+        padding: 15px;
+        font-size: 12px;
+    }
+
+    .fire-button-wrapper {
+        display: flex;
+        align-items: center;
+    }
+
+    .fire-button {
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
     }
 </style>
 
 @code {
+    private Board teamBoard;
+    private Board enemyBoard;
 
+    protected override void OnInitialized()
+    {
+        teamBoard = new Board();
+        enemyBoard = new Board();
+    }
+
+    private void PlaceShips()
+    {
+        Console.WriteLine("StartGame method called");
+
+        // Randomly place ships on both boards
+        var shipTypes = new List<(Ship, Square)>
+        {
+            (new Ship("Destroyer", 2), Square.Ship),
+            (new Ship("Submarine", 3), Square.Ship),
+            (new Ship("Cruiser", 3), Square.Ship),
+            (new Ship("Battleship", 4), Square.Ship),
+            (new Ship("Carrier", 5), Square.Ship)
+        };
+
+        teamBoard.RandomlyPlaceShips(shipTypes);
+        enemyBoard.RandomlyPlaceShips(shipTypes);
+
+        // Debugging output to verify ship placement
+        Console.WriteLine("Team Board:");
+        teamBoard.Display();
+        Console.WriteLine("Enemy Board:");
+        enemyBoard.Display();
+
+        StateHasChanged();
+    }
 }

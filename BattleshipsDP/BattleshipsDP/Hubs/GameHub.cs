@@ -57,6 +57,5 @@ namespace BattleshipsDP.Hubs
                 await Clients.Group(roomId).SendAsync("NavigateToBattle");
             }
         }
-
     }
 }
