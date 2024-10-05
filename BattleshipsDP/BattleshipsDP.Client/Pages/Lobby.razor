@@ -3,32 +3,85 @@
 @inject NavigationManager NavigationManager
 @rendermode @(new InteractiveWebAssemblyRenderMode(false))
 
-<h3>Welcome to Battleships game</h3>
+<div class="container">
+    <h3>Welcome to Battleships Game</h3>
 
-@if(currentRoom is null)
-{
-    <input @bind="playerName" placeholder="Your Name" />
-    <input @bind="currentRoomName" placeholder="Room Name" />
-    <button @onclick="CreateRoom">Create Room</button>
+    @if (currentRoom is null)
+    {
+        <div class="form-group">
+            <input class="input-field" @bind="playerName" placeholder="Your Name" />
+        </div>
+        <div class="form-group">
+            <input class="input-field" @bind="currentRoomName" placeholder="Room Name" />
+        </div>
+        <div class="form-group">
+            <button class="btn" @onclick="CreateRoom">Create Room</button>
+        </div>
 
-    <h3>Rooms:</h3>
-    <ul>
-        @foreach (var room in rooms)
-        {
-            <li>
-                @room.RoomName <button @onclick="() => JoinRoom(room.RoomId)">
-                    Join Room
-                </button>
-            </li>
+        <h3>Rooms:</h3>
+        <ul class="room-list">
+            @foreach (var room in rooms)
+            {
+                <li>
+                    @room.RoomName <button class="btn" @onclick="() => JoinRoom(room.RoomId)">
+                        Join Room
+                    </button>
+                </li>
+            }
+        </ul>
+    }
+    else
+    {
+        <CascadingValue Value="hubConnection">
+            <Room CurrentRoom="currentRoom" />
+        </CascadingValue>
+    }
+</div>
+
+<style>
+    .container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        text-align: center;
+    }
+
+    .form-group {
+        margin: 15px 0;
+    }
+
+    .input-field {
+        padding: 10px;
+        width: 300px;
+        border: 2px solid #ddd;
+        border-radius: 5px;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+        .btn:hover {
+            background-color: #0056b3;
         }
-    </ul>
-}
-else
-{
-    <CascadingValue Value="hubConnection">
-        <Room CurrentRoom="currentRoom" />
-    </CascadingValue>
-}
+
+    .room-list {
+        list-style-type: none;
+        padding: 0;
+    }
+
+        .room-list li {
+            margin: 10px 0;
+        }
+</style>
 
 
 @code {
