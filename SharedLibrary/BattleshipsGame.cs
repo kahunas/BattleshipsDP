@@ -34,38 +34,7 @@ namespace SharedLibrary
         }
         public void Start()
         {
-            return;
-            bool isTeam1Turn = true;
-
-            //while (!Team1.HasLost() && !Team2.HasLost())
-            //{
-            //    Team currentTeam = isTeam1Turn ? Team1 : Team2;
-            //    Team opponentTeam = isTeam1Turn ? Team2 : Team1;
-
-            //    // Here you'd handle the actual player turn logic, such as:
-            //    // 1. Let the current player fire at the opponent's board.
-            //    // 2. Process ship placements (if in the placement phase).
-            //    // 3. Alternate between players within the team for taking turns.
-
-            //    // Example: Team1 Player1 fires at Team2's board
-            //    Console.WriteLine($"{currentTeam.Player1.Name}'s turn.");
-            //    currentTeam.Player1.FireAtOpponent(opponentTeam.TeamBoard, row: 3, col: 4);
-
-            //    // Switch turns
-            //    isTeam1Turn = !isTeam1Turn;
-            //}
-
-            //if (Team1.HasLost())
-            //{
-            //    Console.WriteLine("Team 2 wins!");
-            //}
-            //else if (Team2.HasLost())
-            //{
-            //    Console.WriteLine("Team 1 wins!");
-            //}
+            Console.WriteLine("Game started");
         }
-
-        
-
     }
 }

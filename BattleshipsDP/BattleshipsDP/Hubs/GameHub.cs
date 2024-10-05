@@ -51,8 +51,10 @@ namespace BattleshipsDP.Hubs
             var room = _rooms.FirstOrDefault(r => r.RoomId == roomId);
             if(room is not null)
             {
+                //room.AssignPlayersToTeams();
                 room.Game.Start();
-                await Clients.Group(roomId).SendAsync("UpdateGame", room);
+                //await Clients.Group(roomId).SendAsync("UpdateGame", room);
+                await Clients.Group(roomId).SendAsync("NavigateToBattle");
             }
         }
 

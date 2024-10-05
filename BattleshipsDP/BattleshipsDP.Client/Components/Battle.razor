@@ -1,4 +1,53 @@
-﻿<h3>Battle</h3>
+﻿@page "/battle"
+
+<h3>Battle</h3>
+
+<div class="grid-container">
+    <!-- Column Headers -->
+    <div class="grid-header"></div> <!-- Empty top-left corner -->
+    @for (char col = 'A'; col < 'A' + 10; col++)
+    {
+        <div class="grid-header">@col</div>
+    }
+
+    @for (int row = 1; row <= 10; row++)
+    {
+        <!-- Row Header -->
+        <div class="grid-header">@row</div>
+        @for (int col = 0; col < 10; col++)
+        {
+            <div class="grid-item"></div>
+        }
+    }
+</div>
+
+<style>
+    .grid-container {
+        display: grid;
+        grid-template-columns: repeat(11, 1fr);
+        gap: 1px;
+        width: 100%;
+        max-width: 550px;
+        margin: auto;
+    }
+
+    .grid-header {
+        background-color: #d0d0d0;
+        border: 1px solid #ccc;
+        text-align: center;
+        padding: 20px;
+        font-size: 14px;
+        font-weight: bold;
+    }
+
+    .grid-item {
+        background-color: #f0f0f0;
+        border: 1px solid #ccc;
+        text-align: center;
+        padding: 20px;
+        font-size: 14px;
+    }
+</style>
 
 @code {
 

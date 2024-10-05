@@ -1,4 +1,6 @@
-﻿@if(CurrentRoom is not null)
+﻿@page "/room"
+
+@if(CurrentRoom is not null)
 {
     <h3>@CurrentRoom.RoomName</h3>
 
@@ -16,7 +18,7 @@
 
 
 }
-
+@inject NavigationManager NavigationManager
 @code {
     private string? myPlayerId;
     [CascadingParameter]
@@ -42,6 +44,11 @@
         {
             CurrentRoom = serverRoom;
             StateHasChanged();
+        });
+
+        HubConnection.On("NavigateToBattle", () =>
+        {
+            NavigationManager.NavigateTo("/battle");
         });
     }
 
