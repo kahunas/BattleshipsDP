@@ -2,25 +2,61 @@
 
 @if(CurrentRoom is not null)
 {
-    <h3>@CurrentRoom.RoomName</h3>
+    <div class="container">
+        <h3>@CurrentRoom.RoomName</h3>
 
-    if (CurrentRoom.Players.Count < 4)
-    {
-        <h4>Waiting for more players to join...</h4>
+        @if (CurrentRoom.Players.Count < 4)
+        {
+            <h4 class="info-text">Waiting for more players to join...</h4>
+            <h4 class="info-text">Player count - @CurrentRoom.Players.Count</h4>
+        }
+
+        @if ((!CurrentRoom.Game.GameStarted || CurrentRoom.Game.GameOver)
+       && CurrentRoom.Game.ATeamPlayer1Id == myPlayerId
+       && CurrentRoom.Players.Count == 4)
+        {
+            <button class="btn" @onclick="StartGame">Start Game</button>
+        }
+    </div>
+}
+
+<style>
+    .container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        text-align: center;
     }
 
-    if ((!CurrentRoom.Game.GameStarted || CurrentRoom.Game.GameOver)
-        && CurrentRoom.Game.ATeamPlayer1Id == myPlayerId
-        && CurrentRoom.Players.Count == 4) 
-    {
-        <button @onclick="StartGame">Start Game</button>
+    h3 {
+        margin-bottom: 20px;
+        font-size: 24px;
     }
 
+    .info-text {
+        font-size: 18px;
+        color: #ff5722;
+        margin-bottom: 20px;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
 
 }
+
 @inject NavigationManager NavigationManager
 @code {
     private string? myPlayerId;
+    private bool GameStarted;
     [CascadingParameter]
     public HubConnection? HubConnection { get; set; }
     [Parameter]
@@ -31,7 +67,7 @@
         if (CurrentRoom is null || HubConnection is null ||
         HubConnection.ConnectionId is null)
             return;
-
+        GameStarted = false;
         myPlayerId = HubConnection.ConnectionId;
 
         HubConnection.On<Player>("PlayerJoined", newPlayer =>
