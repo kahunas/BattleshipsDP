@@ -9,63 +9,132 @@ namespace SharedLibrary
     public class BattleshipsGame
     {
         //--- TEAM A
+        public Team Team1 { get; set; }
         public string ATeamPlayer1Id { get; set; } //Host
         public string ATeamPlayer2Id { get; set; }
-        public Board ATeamBoard { get; set; }
 
         //--- TEAM B
+        public Team Team2 { get; set; }
         public string BTeamPlayer1Id { get; set; }
         public string BTeamPlayer2Id { get; set; }
-        public Board BTeamBoard { get; set; }
 
-
+        List<(Ship, Square)> shipTypes { get; set; }
         public string CurrentPlayerId { get; set; }
         public bool GameStarted { get; set; } = false;
         public bool GameOver { get; set; } = false;
+        private bool isTeam1Turn {  get; set; }
+        private bool isTeam1Player1Turn { get; set; }
+        private bool isTeam2Player1Turn { get; set; }
+
 
 
         public BattleshipsGame()
         {
+            Team1 = new Team();
             ATeamPlayer1Id = string.Empty;
             ATeamPlayer2Id = string.Empty;
+            Team2 = new Team();
             BTeamPlayer1Id = string.Empty;
             BTeamPlayer2Id = string.Empty;
             CurrentPlayerId = string.Empty;
-        }
-        public void Start()
+            shipTypes = new List<(Ship, Square)>();
+            isTeam1Turn = true;
+            isTeam1Player1Turn = true;
+            isTeam2Player1Turn = true;
+
+    }
+    public void Start()
         {
-            return;
-            bool isTeam1Turn = true;
 
-            //while (!Team1.HasLost() && !Team2.HasLost())
-            //{
-            //    Team currentTeam = isTeam1Turn ? Team1 : Team2;
-            //    Team opponentTeam = isTeam1Turn ? Team2 : Team1;
+            if (GameStarted)
+            {
+                return;
+            }
 
-            //    // Here you'd handle the actual player turn logic, such as:
-            //    // 1. Let the current player fire at the opponent's board.
-            //    // 2. Process ship placements (if in the placement phase).
-            //    // 3. Alternate between players within the team for taking turns.
+            GameStarted = true;
+            
+            Team1.Board = PlaceShips(shipTypes);
+            Team2.Board = PlaceShips(shipTypes);
+            Team1.Turn(true);
 
-            //    // Example: Team1 Player1 fires at Team2's board
-            //    Console.WriteLine($"{currentTeam.Player1.Name}'s turn.");
-            //    currentTeam.Player1.FireAtOpponent(opponentTeam.TeamBoard, row: 3, col: 4);
+            while (!Team1.HasLost && !Team2.HasLost && !GameOver)
+            {
+                HandleTurn();
+            }
 
-            //    // Switch turns
-            //    isTeam1Turn = !isTeam1Turn;
-            //}
-
-            //if (Team1.HasLost())
-            //{
-            //    Console.WriteLine("Team 2 wins!");
-            //}
-            //else if (Team2.HasLost())
-            //{
-            //    Console.WriteLine("Team 1 wins!");
-            //}
+            if (Team1.HasLost)
+            {
+                GameOver = true;
+            }
+            else if (Team2.HasLost)
+            {
+                GameOver = true;
+            }
         }
 
-        
+        private void HandleTurn()
+        {
+            Team currentTeam = isTeam1Turn ? Team1 : Team2;
+            Team opponentTeam = isTeam1Turn ? Team2 : Team1;
 
+            string currentPlayerId = GetCurrentPlayerId();
+            
+            bool hit = FireAtOpponent(opponentTeam.Board, row: 3, col: 4);
+
+            if (hit)
+            {
+               
+            }
+            else
+            {
+                
+            }
+
+            if (opponentTeam.HasLost)
+            {
+                GameOver = true;
+                return;
+            }
+
+            SwitchTurn();
+        }
+
+        private Board PlaceShips(List<(Ship, Square)> shipTypes)
+        {
+            Board board = new Board();
+            board.RandomlyPlaceShips(shipTypes);
+            return board;
+        }
+
+        private bool FireAtOpponent(Board opponentBoard, int row, int col)
+        {
+            return opponentBoard.Fire(row, col);
+        }
+
+        private void SwitchTurn()
+        {
+            if (isTeam1Turn)
+            {
+                isTeam1Player1Turn = !isTeam1Player1Turn;
+                if (!isTeam1Player1Turn) isTeam1Turn = false;
+            }
+            else
+            {
+                isTeam2Player1Turn = !isTeam2Player1Turn;
+                if (!isTeam2Player1Turn) isTeam1Turn = true;
+            }
+        }
+
+        private string GetCurrentPlayerId()
+        {
+            if (isTeam1Turn)
+            {
+                return isTeam1Player1Turn ? ATeamPlayer1Id : ATeamPlayer2Id;
+            }
+            else
+            {
+                return isTeam2Player1Turn ? BTeamPlayer1Id : BTeamPlayer2Id;
+            }
+        }
     }
 }
