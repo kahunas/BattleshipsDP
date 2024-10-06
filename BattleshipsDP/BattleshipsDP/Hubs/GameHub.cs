@@ -55,6 +55,33 @@ namespace BattleshipsDP.Hubs
                 room.Game.Start();
                 //await Clients.Group(roomId).SendAsync("UpdateGame", room);
                 await Clients.Group(roomId).SendAsync("NavigateToBattle");
+
+                // Log the board details
+                Console.WriteLine("Sending ATeamBoard:");
+                LogBoard(room.Game.ATeamBoard);
+                Console.WriteLine("Sending BTeamBoard:");
+                LogBoard(room.Game.BTeamBoard);
+
+                await Clients.Group(roomId).SendAsync("UpdateBoards", room.Game.ATeamBoard, room.Game.BTeamBoard);
+            }
+        }
+
+        public async Task Fire()
+        {
+            // fire at the opponent's board
+            Console.WriteLine("Shot fired");
+            // Add logic to handle the shot here
+        }
+
+        private void LogBoard(Board board)
+        {
+            for (int row = 0; row < board.Size; row++)
+            {
+                for (int col = 0; col < board.Size; col++)
+                {
+                    Console.Write($"{board.Grid[row][col].GetDescription()} ");
+                }
+                Console.WriteLine();
             }
         }
     }

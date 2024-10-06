@@ -51,12 +51,15 @@
         transition: background-color 0.3s;
     }
 
-}
+</style>
 
 @inject NavigationManager NavigationManager
 @code {
     private string? myPlayerId;
     private bool GameStarted;
+    private Board? ATeamBoard;
+    private Board? BTeamBoard;
+
     [CascadingParameter]
     public HubConnection? HubConnection { get; set; }
     [Parameter]

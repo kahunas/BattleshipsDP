@@ -22,16 +22,15 @@
                 <div class="grid-header">@row</div>
                 @for (int col = 0; col < teamBoard.Size; col++)
                 {
-                    <div class="grid-item">@teamBoard.Grid[row, col].GetDescription()</div>
+                    <div class="grid-item">@teamBoard.Grid[row][col].GetDescription()</div>
                 }
             }
         </div>
     </div>
 
     <div class="fire-button-wrapper">
-        <button class="fire-button" @onclick="PlaceShips">Place Ships Randomly</button>
+        <button class="fire-button" @onclick="Fire">Fire</button>
     </div>
-
 
     <div class="table-wrapper">
         <h4>Enemy Table</h4>
@@ -49,7 +48,9 @@
                 <div class="grid-header">@row</div>
                 @for (int col = 0; col < enemyBoard.Size; col++)
                 {
-                    <div class="grid-item">@enemyBoard.Grid[row, col].GetDescription()</div>
+                    <div class="grid-item" @onclick="() => SelectTarget(row, col)">
+                        @enemyBoard.Grid[row][col].GetDescription()
+                    </div>
                 }
             }
         </div>
@@ -95,7 +96,12 @@
         text-align: center;
         padding: 15px;
         font-size: 12px;
+        cursor: pointer;
     }
+
+        .grid-item.selected {
+            background-color: #ffcccb; /* Light red color for selected tile */
+        }
 
     .fire-button-wrapper {
         display: flex;
@@ -110,38 +116,87 @@
 </style>
 
 @code {
-    private Board teamBoard;
-    private Board enemyBoard;
+    private Board teamBoard = new Board();
+    private Board enemyBoard = new Board();
+    private int selectedRow = -1;
+    private int selectedCol = -1;
 
-    protected override void OnInitialized()
+    [CascadingParameter]
+    public HubConnection? HubConnection { get; set; }
+
+    protected override async Task OnInitializedAsync()
     {
-        teamBoard = new Board();
-        enemyBoard = new Board();
+        if (HubConnection is null)
+        {
+            Console.WriteLine("HubConnection is null in Battle.razor");
+            return;
+        }
+
+        HubConnection.On<Board, Board>("UpdateBoards", (aTeamBoard, bTeamBoard) =>
+        {
+            Console.WriteLine("UpdateBoards event received");
+            teamBoard = aTeamBoard;
+            enemyBoard = bTeamBoard;
+
+            // Log the received board details
+            Console.WriteLine("Received ATeamBoard:");
+            LogBoard(teamBoard);
+            Console.WriteLine("Received BTeamBoard:");
+            LogBoard(enemyBoard);
+
+            StateHasChanged();
+        });
+
+        await HubConnection.StartAsync();
+        Console.WriteLine("HubConnection started in Battle.razor");
     }
 
-    private void PlaceShips()
+    private void LogBoard(Board board)
     {
-        Console.WriteLine("StartGame method called");
-
-        // Randomly place ships on both boards
-        var shipTypes = new List<(Ship, Square)>
+        for (int row = 0; row < board.Size; row++)
         {
-            (new Ship("Destroyer", 2), Square.Ship),
-            (new Ship("Submarine", 3), Square.Ship),
-            (new Ship("Cruiser", 3), Square.Ship),
-            (new Ship("Battleship", 4), Square.Ship),
-            (new Ship("Carrier", 5), Square.Ship)
-        };
+            for (int col = 0; col < board.Size; col++)
+            {
+                Console.Write($"{board.Grid[row][col].GetDescription()} ");
+            }
+            Console.WriteLine();
+        }
+    }
 
-        teamBoard.RandomlyPlaceShips(shipTypes);
-        enemyBoard.RandomlyPlaceShips(shipTypes);
-
-        // Debugging output to verify ship placement
-        Console.WriteLine("Team Board:");
-        teamBoard.Display();
-        Console.WriteLine("Enemy Board:");
-        enemyBoard.Display();
-
+    private void SelectTarget(int row, int col)
+    {
+        selectedRow = row;
+        selectedCol = col;
+        Console.WriteLine($"Target selected at ({row}, {col})");
         StateHasChanged();
+    }
+
+    private async Task Fire()
+    {
+        if (selectedRow == -1 || selectedCol == -1)
+        {
+            Console.WriteLine("No target selected");
+            return;
+        }
+
+        if (HubConnection is null)
+        {
+            Console.WriteLine("HubConnection is null in Fire method");
+            return;
+        }
+
+        Console.WriteLine($"Fired at ({selectedRow}, {selectedCol})");
+
+        await HubConnection.InvokeAsync("Fire", selectedRow, selectedCol);
+
+        // Reset the selected target
+        selectedRow = -1;
+        selectedCol = -1;
+        StateHasChanged();
+    }
+
+    private string GetGridItemClass(int row, int col)
+    {
+        return row == selectedRow && col == selectedCol ? "grid-item selected" : "grid-item";
     }
 }

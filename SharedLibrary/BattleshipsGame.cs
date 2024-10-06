@@ -34,12 +34,14 @@ namespace SharedLibrary
             BTeamPlayer1Id = string.Empty;
             BTeamPlayer2Id = string.Empty;
             CurrentPlayerId = string.Empty;
+
+
         }
         public void Start()
         {
-            Console.WriteLine("Game started");
             GameStarted = true;
             GameOver = false;
+
             DividePlayersIntoTeams(new List<Player>
             {
                 new Player(ATeamPlayer1Id, "Player 1"),
@@ -47,10 +49,37 @@ namespace SharedLibrary
                 new Player(BTeamPlayer1Id, "Player 3"),
                 new Player(BTeamPlayer2Id, "Player 4")
             });
+
             ATeamBoard = ATeam.Board;
             BTeamBoard = BTeam.Board;
+
             PrintTeams();
+
+            // Define ships to be placed
+            var ships = new List<(Ship, Square)>
+            {
+                (new Ship("Destroyer", 2), Square.Ship),
+                (new Ship("Submarine", 3), Square.Ship),
+                (new Ship("Cruiser", 3), Square.Ship),
+                (new Ship("Battleship", 4), Square.Ship),
+                (new Ship("Carrier", 5), Square.Ship)
+            };
+
+            // Randomly place ships on Team A's board
+            ATeamBoard.InitializeGrid();
+            ATeamBoard.RandomlyPlaceShips(ships);
+            Console.WriteLine("Team A's Board:");
+            ATeamBoard.Display();
+
+            // Randomly place ships on Team B's board
+            BTeamBoard.InitializeGrid();
+            BTeamBoard.RandomlyPlaceShips(ships);
+            Console.WriteLine("Team B's Board:");
+            BTeamBoard.Display();
+
+            Console.WriteLine("Game started");
         }
+
 
         public void DividePlayersIntoTeams(List<Player> players)
         {

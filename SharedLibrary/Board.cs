@@ -10,25 +10,31 @@ namespace SharedLibrary
     public class Board
     {
         public int Size { get; set; }
-        public Square[,] Grid { get; set; }
+        public List<List<Square>> Grid { get; set; }
         public List<Ship> Ships { get; set; }
         private Random random = new Random();
 
         public Board(int size = 10)
         {
             Size = size;
-            Grid = new Square[Size, Size];
+            Grid = new List<List<Square>>();
             Ships = new List<Ship>();
 
             // Initialize the grid with Square.Empty
             InitializeGrid();
         }
 
-        private void InitializeGrid()
+        public void InitializeGrid()
         {
             for (int row = 0; row < Size; row++)
+            {
+                var rowList = new List<Square>();
                 for (int col = 0; col < Size; col++)
-                    Grid[row, col] = Square.Empty;
+                {
+                    rowList.Add(Square.Empty);
+                }
+                Grid.Add(rowList);
+            }
         }
 
         public bool AllShipsDestroyed()
@@ -41,7 +47,7 @@ namespace SharedLibrary
         {
             foreach (var coord in coordinates)
             {
-                if (Grid[coord.Item1, coord.Item2] != Square.Empty)
+                if (Grid[coord.Item1][coord.Item2] != Square.Empty)
                     return false; // Cannot place ship on an already occupied space
             }
 
@@ -50,7 +56,7 @@ namespace SharedLibrary
 
             // Mark the board where the ship is placed
             foreach (var coord in coordinates)
-                Grid[coord.Item1, coord.Item2] = Square.Ship;
+                Grid[coord.Item1][coord.Item2] = Square.Ship;
 
             return true;
         }
@@ -89,7 +95,7 @@ namespace SharedLibrary
                 int col = isHorizontal ? startCol + i : startCol;
 
                 // Check if the ship would be out of bounds
-                if (row >= Size || col >= Size || Grid[row, col] != Square.Empty)
+                if (row >= Size || col >= Size || Grid[row][col] != Square.Empty)
                 {
                     return false; // Invalid position
                 }
@@ -104,9 +110,9 @@ namespace SharedLibrary
         // Method to fire at a specific coordinate on the board
         public bool Fire(int row, int col)
         {
-            if (Grid[row, col] == Square.Ship)
+            if (Grid[row][col] == Square.Ship)
             {
-                Grid[row, col] = Square.Hit; // Mark hit
+                Grid[row][col] = Square.Hit; // Mark hit
                 foreach (var ship in Ships)
                 {
                     if (ship.Hit(row, col))
@@ -114,9 +120,9 @@ namespace SharedLibrary
                 }
                 return true; // Hit
             }
-            else if (Grid[row, col] == Square.Empty)
+            else if (Grid[row][col] == Square.Empty)
             {
-                Grid[row, col] = Square.Miss; // Mark miss
+                Grid[row][col] = Square.Miss; // Mark miss
             }
             return false; // Miss
         }
@@ -128,7 +134,14 @@ namespace SharedLibrary
             {
                 for (int col = 0; col < Size; col++)
                 {
-                    Console.Write(Grid[row, col].GetDescription() + " ");
+                    string displayChar = Grid[row][col] switch
+                    {
+                        Square.Ship => "S",
+                        Square.Hit => "X",
+                        Square.Miss => "M",
+                        _ => "[]"
+                    };
+                    Console.Write(displayChar + " ");
                 }
                 Console.WriteLine();
             }
