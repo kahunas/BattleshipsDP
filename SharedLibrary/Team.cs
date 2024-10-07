@@ -12,13 +12,14 @@ namespace SharedLibrary
         private bool turn { get; set; }
         private Board board { get; set; }
         public string Name { get; set; }
-        public Board Board { get; set; }
         public List<Player> Players { get; set; }
 
-        public Team() {
+        public Team(string name) {
             hasLost = false;
             turn = false;
             board = new Board();
+            Players = new List<Player>();
+            Name = name;
         }
 
         public bool HasLost

@@ -26,7 +26,7 @@ namespace SharedLibrary
         public string CurrentPlayerId { get; set; }
         public bool GameStarted { get; set; } = false;
         public bool GameOver { get; set; } = false;
-        private bool isTeam1Turn {  get; set; }
+        private bool isTeam1Turn { get; set; }
         private bool isTeam1Player1Turn { get; set; }
         private bool isTeam2Player1Turn { get; set; }
 
@@ -34,10 +34,10 @@ namespace SharedLibrary
 
         public BattleshipsGame()
         {
-            Team1 = new Team();
+            Team1 = new Team("First Team");
             ATeamPlayer1Id = string.Empty;
             ATeamPlayer2Id = string.Empty;
-            Team2 = new Team();
+            Team2 = new Team("Second Team");
             BTeamPlayer1Id = string.Empty;
             BTeamPlayer2Id = string.Empty;
             CurrentPlayerId = string.Empty;
@@ -46,16 +46,14 @@ namespace SharedLibrary
             isTeam1Player1Turn = true;
             isTeam2Player1Turn = true;
 
-    }
-    public void Start()
+        }
+        public void Start()
         {
 
             if (GameStarted)
             {
                 return;
             }
-            Console.WriteLine("Game started");
-            GameStarted = true;
             GameOver = false;
             DividePlayersIntoTeams(new List<Player>
             {
@@ -64,30 +62,10 @@ namespace SharedLibrary
                 new Player(BTeamPlayer1Id, "Player 3"),
                 new Player(BTeamPlayer2Id, "Player 4")
             });
-            ATeamBoard = ATeam.Board;
-            BTeamBoard = BTeam.Board;
+
             PrintTeams();
-        }
-
-        public void DividePlayersIntoTeams(List<Player> players)
-        {
-            if (players.Count < 4)
-            {
-                throw new ArgumentException("Not enough players to form two teams.");
-            }
-
-            ATeam = new Team("Team A")
-            {
-                Players = new List<Player> { players[0], players[1] },
-                Board = new Board()
-            };
-            BTeam = new Team("Team B")
-            {
-                Players = new List<Player> { players[2], players[3] },
-                Board = new Board()
-            };
             GameStarted = true;
-            
+
             Team1.Board = PlaceShips(shipTypes);
             Team2.Board = PlaceShips(shipTypes);
             Team1.Turn(true);
@@ -107,22 +85,47 @@ namespace SharedLibrary
             }
         }
 
+        public void DividePlayersIntoTeams(List<Player> players)
+        {
+            if (players.Count < 4)
+            {
+                throw new ArgumentException("Not enough players to form two teams.");
+            }
+
+            ATeam = new Team("Team A")
+            {
+                Players = new List<Player> { players[0], players[1] },
+                Board = new Board()
+            };
+            BTeam = new Team("Team B")
+            {
+                Players = new List<Player> { players[2], players[3] },
+                Board = new Board()
+            };
+
+            ATeamPlayer1Id = players[0].ConnectionId;
+            ATeamPlayer2Id = players[1].ConnectionId;
+            BTeamPlayer1Id = players[2].ConnectionId;
+            BTeamPlayer2Id = players[3].ConnectionId;
+        }
+
         private void HandleTurn()
         {
             Team currentTeam = isTeam1Turn ? Team1 : Team2;
             Team opponentTeam = isTeam1Turn ? Team2 : Team1;
 
             string currentPlayerId = GetCurrentPlayerId();
-            
-            bool hit = FireAtOpponent(opponentTeam.Board, row: 3, col: 4);
+
+            //bool hit = FireAtOpponent(opponentTeam.Board, row: 3, col: 4);
+            bool hit = true;
 
             if (hit)
             {
-               
+                
             }
             else
             {
-                
+
             }
 
             if (opponentTeam.HasLost)
@@ -134,10 +137,7 @@ namespace SharedLibrary
             SwitchTurn();
         }
 
-            ATeamPlayer1Id = players[0].ConnectionId;
-            ATeamPlayer2Id = players[1].ConnectionId;
-            BTeamPlayer1Id = players[2].ConnectionId;
-            BTeamPlayer2Id = players[3].ConnectionId;
+
         private Board PlaceShips(List<(Ship, Square)> shipTypes)
         {
             Board board = new Board();
@@ -152,6 +152,7 @@ namespace SharedLibrary
             {
                 Console.WriteLine($"Player ID: {player.ConnectionId}, Name: {player.Name}");
             }
+        }
         private bool FireAtOpponent(Board opponentBoard, int row, int col)
         {
             return opponentBoard.Fire(row, col);
@@ -171,12 +172,6 @@ namespace SharedLibrary
             }
         }
 
-            Console.WriteLine("Team B:");
-            foreach (var player in BTeam.Players)
-            {
-                Console.WriteLine($"Player ID: {player.ConnectionId}, Name: {player.Name}");
-            }
-        }
         private string GetCurrentPlayerId()
         {
             if (isTeam1Turn)
@@ -190,3 +185,4 @@ namespace SharedLibrary
         }
     }
 }
+
