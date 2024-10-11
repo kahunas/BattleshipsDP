@@ -1,4 +1,28 @@
-﻿@page "/room"
+﻿@page "/room/{roomId}"
+
+@inject NavigationManager NavigationManager
+@inject PlayerState PlayerState
+@rendermode @(new InteractiveWebAssemblyRenderMode(false))
+
+
+@code{
+    [Parameter] public string RoomId { get; set; }
+    private string? myPlayerId;
+    private bool GameStarted;
+    private HubConnection HubConnection = PlayerState.HubConnection;
+    private GameRoom? CurrentRoom;
+}
+
+
+
+
+<h3>kambarys: @CurrentRoom?.RoomName pabaiga</h3>
+
+@if (PlayerState.HubConnection != null)
+{
+    <p>Connection established!</p>
+}
+
 
 @if(CurrentRoom is not null)
 {
@@ -50,26 +74,22 @@
         cursor: pointer;
         transition: background-color 0.3s;
     }
+</style>
 
-}
-
-@inject NavigationManager NavigationManager
 @code {
-    private string? myPlayerId;
-    private bool GameStarted;
-    [CascadingParameter]
-    public HubConnection? HubConnection { get; set; }
-    [Parameter]
-    public GameRoom? CurrentRoom { get; set; }
+
 
     protected override async Task OnInitializedAsync()
     {
-        if (CurrentRoom is null || HubConnection is null ||
-        HubConnection.ConnectionId is null)
+        if (!IsHubConnectionActive()) return;
+
+        CurrentRoom = await PlayerState.HubConnection.InvokeAsync<GameRoom>("GetRoomById", RoomId);
+
+        if (CurrentRoom is null)
             return;
         GameStarted = false;
         myPlayerId = HubConnection.ConnectionId;
-
+        Console.WriteLine(myPlayerId);
         HubConnection.On<Player>("PlayerJoined", newPlayer =>
         {
             CurrentRoom.TryAddPlayer(newPlayer);
@@ -90,9 +110,11 @@
 
     async Task StartGame()
     {
-        if (HubConnection is null || CurrentRoom is null)
-            return;
+        // if (HubConnection is null || CurrentRoom is null)
+        //     return;
 
-        await HubConnection.InvokeAsync("StartGame", CurrentRoom.RoomId);
+        // await HubConnection.InvokeAsync("StartGame", CurrentRoom.RoomId);
     }
+
+    private bool IsHubConnectionActive() => PlayerState.HubConnection is not null;
 }

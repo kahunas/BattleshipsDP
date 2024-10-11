@@ -5,6 +5,12 @@ namespace BattleshipsDP.Hubs
 {
     public class GameHub : Hub
     {
+        private readonly GameService _gameService;
+        public GameHub(GameService gameService)
+        {
+            _gameService = gameService;
+        }
+
         private static readonly List<GameRoom> _rooms = new();
         public override async Task OnConnectedAsync()
         {
@@ -12,6 +18,13 @@ namespace BattleshipsDP.Hubs
 
             await Clients.Caller.SendAsync("Rooms", _rooms.OrderBy(r => r.RoomName));
 
+        }
+
+        public override async Task OnDisconnectedAsync(Exception? exception)
+        {
+            Console.WriteLine($"Player with ID {Context.ConnectionId} disconnected.");
+
+            await base.OnDisconnectedAsync(exception);
         }
 
         public async Task<GameRoom> CreateRoom(string name, string playerName)
@@ -44,6 +57,12 @@ namespace BattleshipsDP.Hubs
             }
 
             return null;
+        }
+
+        public async Task<GameRoom> GetRoomById(string roomId)
+        {
+            return _gameService.GetRoomById(roomId);
+
         }
 
         public async Task StartGame(string roomId)

@@ -1,40 +1,59 @@
 ﻿@page "/"
 
 @inject NavigationManager NavigationManager
+@inject PlayerState PlayerState
 @rendermode @(new InteractiveWebAssemblyRenderMode(false))
 
-<div class="container">
-    <h3>Welcome to Battleships Game</h3>
+@code {
+    private List<GameRoom> rooms = new();
+    
+    private string playerName = string.Empty;
+    private bool userNameValid = false;
 
-    @if (currentRoom is null)
-    {
+    private string currentRoomName = string.Empty;
+    private bool roomNameValid = false;
+
+    private GameRoom? currentRoom;
+}
+
+
+<div class="container">
+
+    @if (!userNameValid){
+        <h3>Welcome to Battleships Game</h3>
         <div class="form-group">
             <input class="input-field" @bind="playerName" placeholder="Your Name" />
         </div>
+        <div class="form-group">
+            <button class="btn validate-btn" @onclick="CheckPlayer">Enter name</button>
+        </div>
+        <p class="validation-message">Please enter a valid username to proceed.</p>
+    }
+    else{
+        <h1>Hello, @playerName!</h1>
+        <h3>To continue, create or join a room!</h3>
         <div class="form-group">
             <input class="input-field" @bind="currentRoomName" placeholder="Room Name" />
         </div>
         <div class="form-group">
             <button class="btn" @onclick="CreateRoom">Create Room</button>
         </div>
+        @if (!roomNameValid)
+        {
+            <p class="validation-message">Room name cannot be empty!</p>
+        }
 
         <h3>Rooms:</h3>
         <ul class="room-list">
             @foreach (var room in rooms)
             {
                 <li>
-                    @room.RoomName <button class="btn" @onclick="() => JoinRoom(room.RoomId)">
+                    @room.RoomName @room.Players.Count/4 <button class="btn" @onclick="() => JoinRoom(room.RoomId)">
                         Join Room
                     </button>
                 </li>
             }
         </ul>
-    }
-    else
-    {
-        <CascadingValue Value="hubConnection">
-            <Room CurrentRoom="currentRoom" />
-        </CascadingValue>
     }
 </div>
 
@@ -69,64 +88,81 @@
         transition: background-color 0.3s;
     }
 
-        .btn:hover {
-            background-color: #0056b3;
-        }
+    .btn:hover {
+        background-color: #0056b3;
+    }
 
     .room-list {
         list-style-type: none;
         padding: 0;
     }
 
-        .room-list li {
-            margin: 10px 0;
-        }
+    .room-list li {
+        margin: 10px 0;
+    }
+    .validation-message {
+        color: red;
+        font-size: 14px;
+    }
+
+    .validate-btn {
+        background-color: #007bff;
+    }
+
+    .validate-btn:hover {
+        background-color: #218838;
+    }
 </style>
 
-
 @code {
-    private HubConnection? hubConnection;
-    private string playerName = string.Empty;
-    private string currentRoomName = string.Empty;
-    private GameRoom? currentRoom;
-    private List<GameRoom> rooms = new();
-
     protected override async Task OnInitializedAsync()
     {
-        hubConnection = new HubConnectionBuilder()
-            .WithUrl(NavigationManager.ToAbsoluteUri("/gamehub"))
-            .Build();
+        await PlayerState.InitializeHubConnection("/gamehub", NavigationManager);
 
-        hubConnection.On<List<GameRoom>>("Rooms", (roomList) =>
+        PlayerState.HubConnection?.On<List<GameRoom>>("Rooms", (roomList) =>
         {
             Console.WriteLine($"We got rooms! Counts = {roomList.Count}");
             rooms = roomList;
             StateHasChanged();
         });
-
-        await hubConnection.StartAsync();
     }
 
     private async Task CreateRoom()
     {
-        if (hubConnection is null)
-            return;
+        if (!IsHubConnectionActive()) return;
 
-        currentRoom = await hubConnection.InvokeAsync<GameRoom>("CreateRoom",
-            currentRoomName, playerName);
+        if (!string.IsNullOrEmpty(currentRoomName)){
+            roomNameValid = true;
+            currentRoom = await PlayerState.HubConnection.InvokeAsync<GameRoom>("CreateRoom",
+                currentRoomName, playerName);
+            await NavigateToRoom(currentRoom.RoomId);
+        }
     }
 
     private async Task JoinRoom(string roomId)
     {
-        if (hubConnection is null)
-            return;
+        if (!IsHubConnectionActive()) return;
 
-        var joinedRoom = await hubConnection.InvokeAsync<GameRoom>(
+        var joinedRoom = await PlayerState.HubConnection.InvokeAsync<GameRoom>(
             "JoinRoom", roomId, playerName);
 
         if (joinedRoom is not null)
             currentRoom = joinedRoom;
         else
             Console.WriteLine("Room is full or does not exist.");
+        await NavigateToRoom(roomId);
     }
+
+    private void CheckPlayer()
+    {
+        userNameValid = !string.IsNullOrWhiteSpace(playerName);
+        if (userNameValid)
+            PlayerState.SetUser(new Player(PlayerState.HubConnection.ConnectionId, playerName));
+
+        StateHasChanged();
+    }
+
+    private bool IsHubConnectionActive() => PlayerState.HubConnection is not null;
+
+    private async Task NavigateToRoom(string roomId) => NavigationManager.NavigateTo($"/room/{roomId}");
 }
