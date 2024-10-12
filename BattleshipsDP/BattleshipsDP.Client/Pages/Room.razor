@@ -4,7 +4,6 @@
 @inject PlayerState PlayerState
 @rendermode @(new InteractiveWebAssemblyRenderMode(false))
 
-
 @code{
     [Parameter] public string RoomId { get; set; }
     private string? myPlayerId;
@@ -14,20 +13,10 @@
 }
 
 
-
-
-<h3>kambarys: @CurrentRoom?.RoomName pabaiga</h3>
-
-@if (PlayerState.HubConnection != null)
-{
-    <p>Connection established!</p>
-}
-
-
 @if(CurrentRoom is not null)
 {
     <div class="container">
-        <h3>@CurrentRoom.RoomName</h3>
+        <h3>Game room: @CurrentRoom.RoomName</h3>
 
         @if (CurrentRoom.Players.Count < 4)
         {
@@ -89,7 +78,8 @@
             return;
         GameStarted = false;
         myPlayerId = HubConnection.ConnectionId;
-        Console.WriteLine(myPlayerId);
+        
+
         HubConnection.On<Player>("PlayerJoined", newPlayer =>
         {
             CurrentRoom.TryAddPlayer(newPlayer);

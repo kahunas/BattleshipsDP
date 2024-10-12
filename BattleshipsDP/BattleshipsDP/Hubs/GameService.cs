@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using SharedLibrary;
-using BattleshipsDP.Hubs;
 
 namespace BattleshipsDP.Hubs
 {

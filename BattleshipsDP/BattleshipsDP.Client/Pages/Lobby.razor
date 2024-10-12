@@ -147,10 +147,12 @@
             "JoinRoom", roomId, playerName);
 
         if (joinedRoom is not null)
+        {
             currentRoom = joinedRoom;
+            await NavigateToRoom(roomId);
+        }
         else
             Console.WriteLine("Room is full or does not exist.");
-        await NavigateToRoom(roomId);
     }
 
     private void CheckPlayer()
