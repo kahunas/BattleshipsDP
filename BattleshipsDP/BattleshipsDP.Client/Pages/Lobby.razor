@@ -149,10 +149,18 @@
         if (joinedRoom is not null)
         {
             currentRoom = joinedRoom;
+            var roomToUpdate = rooms.FirstOrDefault(r => r.RoomId == roomId);
+            if (roomToUpdate != null)
+            {
+                roomToUpdate.Players = joinedRoom.Players;
+                StateHasChanged();
+            }
             await NavigateToRoom(roomId);
         }
         else
+        {
             Console.WriteLine("Room is full or does not exist.");
+        }
     }
 
     private void CheckPlayer()

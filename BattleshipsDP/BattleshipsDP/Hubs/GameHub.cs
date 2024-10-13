@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using BattleshipsDP.Client.Pages;
+using Microsoft.AspNetCore.SignalR;
 using SharedLibrary;
 
 namespace BattleshipsDP.Hubs
@@ -43,6 +44,7 @@ namespace BattleshipsDP.Hubs
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, roomId);
                 await Clients.Group(roomId).SendAsync("PlayerJoined", newPlayer);
+                await Clients.All.SendAsync("Rooms", _gameService.GetAllRooms().OrderBy(r => r.RoomName));
                 return _gameService.GetRoomById(roomId);
             }
 
