@@ -119,13 +119,9 @@ namespace SharedLibrary
             //bool hit = FireAtOpponent(opponentTeam.Board, row: 3, col: 4);
             bool hit = true;
 
-            if (hit)
+            if (!hit)
             {
-                
-            }
-            else
-            {
-
+                SwitchTurn();
             }
 
             if (opponentTeam.HasLost)
@@ -133,8 +129,6 @@ namespace SharedLibrary
                 GameOver = true;
                 return;
             }
-
-            SwitchTurn();
         }
 
 
