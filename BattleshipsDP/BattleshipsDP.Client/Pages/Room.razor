@@ -100,10 +100,10 @@
 
     async Task StartGame()
     {
-        // if (HubConnection is null || CurrentRoom is null)
-        //     return;
+        if (HubConnection is null || CurrentRoom is null)
+            return;
 
-        // await HubConnection.InvokeAsync("StartGame", CurrentRoom.RoomId);
+        await HubConnection.InvokeAsync("StartGame", CurrentRoom.RoomId);
     }
 
     private bool IsHubConnectionActive() => PlayerState.HubConnection is not null;
