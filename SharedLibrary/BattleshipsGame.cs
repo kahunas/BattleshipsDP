@@ -75,6 +75,7 @@ namespace SharedLibrary
 
             PrintTeams();
 
+
             // Set the first player to start the game
             CurrentPlayerId = ATeamPlayer1Id;
             Console.WriteLine($"First turn goes to Player 1 of Team A: {CurrentPlayerId}");
@@ -82,7 +83,6 @@ namespace SharedLibrary
             // Debug: Print the boards after placing ships
             Console.WriteLine("Team A Board:");
             ATeamBoard.PrintBoard();  // Assuming there's a method to print the board state to the console
-
             Console.WriteLine("Team B Board:");
             BTeamBoard.PrintBoard();  // Assuming there's a method to print the board state to the console
         }

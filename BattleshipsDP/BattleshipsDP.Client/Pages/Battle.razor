@@ -1,4 +1,5 @@
 ﻿@page "/battle"
+@using SharedLibrary
 @inject PlayerState PlayerState
 @inject NavigationManager Navigation
 @rendermode @(new InteractiveWebAssemblyRenderMode(false))
@@ -26,15 +27,17 @@
                 {
                     @foreach (var cell in row)
                     {
-                        <div style="width: 50px; height: 50px; border: 1px solid black; background-color: @(GetCellBackground(cell))">
+                        <div style="width: 50px; height: 50px; border: 1px solid black; background-color: @(cell.GetCellBackground())">
                         </div>
                     }
                 }
             </div>
         </div>
 
-        <!-- Compare Button -->
-        <button @onclick="ShootAtOpponentBoard">Fire</button>
+        <div>
+            <!-- Compare Button -->
+            <button @onclick="ShootAtOpponentBoard">Fire</button>
+        </div>
 
         <!-- Enemy Board -->
         <div>
@@ -45,7 +48,7 @@
                     @foreach (var cell in row)
                     {
                         <div @onclick="() => ToggleEnemyHighlight(cell)"
-                             style="width: 50px; height: 50px; border: 1px solid black; background-color: @(GetCellBackground(cell))">
+                             style="width: 50px; height: 50px; border: 1px solid black; background-color: @(cell.GetCellBackground())">
                         </div>
                     }
                 }
@@ -70,7 +73,6 @@
     private int? selectedRow = null;
     private int? selectedCol = null;
     private string gameOverMessage = string.Empty;
-    private bool IsMyTurn { get; set; } = false;
 
     private List<List<GridCell>> TeamCells = new();
     private List<List<GridCell>> EnemyCells = new();
@@ -98,7 +100,7 @@
                 await PlayerState.HubConnection.StartAsync();
             }
 
-            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ // Receive player info from the server
             PlayerState.HubConnection.On<string, string, string>("ReceivePlayerInfo", (name, connectionId, team) =>
             {
                 PlayerName = name;
@@ -109,37 +111,8 @@
                 InvokeAsync(StateHasChanged);
             });
 
-            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PlayerState.HubConnection.On<List<List<Square>>>("ReceiveBoardState", (receivedCells) =>
-            {
-                // Update TeamCells with the received board state
-                TeamCells = receivedCells.Select(row => row.Select(cell => new GridCell
-                    {
-                        State = cell,
-                        Row = receivedCells.IndexOf(row),
-                        Col = row.IndexOf(cell)
-                    }).ToList()).ToList();
-
-                InvokeAsync(StateHasChanged);
-            });
-
-            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PlayerState.HubConnection.On<List<List<Square>>>("UpdateEnemyBoard", (updatedCells) =>
-            {
-                Console.WriteLine("Received updated enemy board state.");
-                // Update EnemyCells with the received enemy board state
-                EnemyCells = updatedCells.Select(row => row.Select(cell => new GridCell
-                    {
-                        State = cell,
-                        Row = updatedCells.IndexOf(row),
-                        Col = row.IndexOf(cell)
-                    }).ToList()).ToList();
-
-                InvokeAsync(StateHasChanged);
-            });
-
-            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PlayerState.HubConnection.On<List<List<Square>>>("ReceiveBoardState", (receivedCells) =>
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ // Receive board info from the server
+            PlayerState.HubConnection.On<List<List<Square>>>("ReceiveBoardInfo", (receivedCells) =>
             {
                 // Update TeamCells with the received board state
                 TeamCells = receivedCells.Select(row => row.Select(cell => new GridCell
@@ -171,26 +144,19 @@
                 InvokeAsync(StateHasChanged);
             });
 
-            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ // Receive the result of the shoot on enemy board
             PlayerState.HubConnection.On<int, int, string>("ReceiveShootResult", async (row, col, result) =>
             {
                 await HandleShootResult(row, col, result);
             });
 
-            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ // Receive the result of the shoot on team board from enemy
             PlayerState.HubConnection.On<int, int, string>("ReceiveTeamHitResult", async (row, col, result) =>
             {
                 await HandleTeamHitResult(row, col, result);
             });
 
-            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            PlayerState.HubConnection.On("YourTurn", () =>
-            {
-                IsMyTurn = true;
-                InvokeAsync(StateHasChanged);
-            });
-
-            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ // Receive the game over message
             PlayerState.HubConnection.On<string>("ReceiveGameOver", async (message) =>
             {
                 await HandleGameOver(message);
@@ -284,38 +250,5 @@
         gameOverMessage = message;
 
         await InvokeAsync(StateHasChanged);
-    }
-
-
-    public class GridCell
-    {
-        public int Row { get; set; }
-        public int Col { get; set; }
-        public bool IsHighlighted { get; set; } = false;
-        public Square State { get; set; } = Square.Empty; // Track state of the cell
-    }
-
-    private string GetCellBackground(GridCell cell)
-    {
-        if (cell.State == Square.Ship)
-        {
-            return "gray";
-        }
-        else if (cell.State == Square.Hit)
-        {
-            return "red";
-        }
-        else if (cell.State == Square.Miss)
-        {
-            return "blue";
-        }
-        else if (cell.IsHighlighted)
-        {
-            return "yellow";
-        }
-        else
-        {
-            return "transparent";
-        }
     }
 }

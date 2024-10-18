@@ -111,7 +111,7 @@ namespace BattleshipsDP.Hubs
 
             // Convert the board to a serializable format and send it
             var serializableBoard = board.GetSerializableGrid();
-            await Clients.Client(connectionId).SendAsync("ReceiveBoardState", serializableBoard);
+            await Clients.Client(connectionId).SendAsync("ReceiveBoardInfo", serializableBoard);
         }
 
 
@@ -171,7 +171,6 @@ namespace BattleshipsDP.Hubs
             else
             {
                 room.Game.SwitchToNextPlayer();
-                await Clients.Client(room.Game.CurrentPlayerId).SendAsync("YourTurn");
             }
         }
     }
