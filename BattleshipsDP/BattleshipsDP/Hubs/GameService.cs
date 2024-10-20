@@ -17,6 +17,11 @@ namespace BattleshipsDP.Hubs
 
         public GameRoom? GetRoomById(string roomId) => _rooms.FirstOrDefault(r => r.RoomId == roomId);
 
+        public GameRoom? GetRoomByPlayerId(string playerId)
+        {
+            return _rooms.FirstOrDefault(r => r.Players.Any(p => p.ConnectionId == playerId));
+        }
+
         public GameRoom CreateRoom(string name)
         {
             var roomId = Guid.NewGuid().ToString();
@@ -34,10 +39,8 @@ namespace BattleshipsDP.Hubs
         public void StartGame(string roomId)
         {
             var room = GetRoomById(roomId);
-            room?.Game.Start();
+            room?.Game.StartGame();
         }
-
-
 
     }
 }

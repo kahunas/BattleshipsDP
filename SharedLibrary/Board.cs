@@ -31,10 +31,29 @@ namespace SharedLibrary
                     Grid[row, col] = Square.Empty;
         }
 
+        public List<List<Square>> GetSerializableGrid()
+        {
+            var serializableGrid = new List<List<Square>>();
+
+            for (int row = 0; row < Size; row++)
+            {
+                var rowList = new List<Square>();
+                for (int col = 0; col < Size; col++)
+                {
+                    rowList.Add(Grid[row, col]);
+                }
+                serializableGrid.Add(rowList);
+            }
+
+            return serializableGrid;
+        }
+
+
         public bool AllShipsDestroyed()
         {
-            return Ships.Any(p => !p.IsDestroyed());
+            return Ships.All(ship => ship.IsDestroyed());
         }
+
 
         // Method to place a ship on the board using the appropriate enum
         public bool PlaceShip(Ship ship, List<(int, int)> coordinates)
@@ -102,37 +121,54 @@ namespace SharedLibrary
         }
 
         // Method to fire at a specific coordinate on the board
-        public bool Fire(int row, int col)
-        {
-            if (Grid[row, col] == Square.Ship)
-            {
-                Grid[row, col] = Square.Hit; // Mark hit
-                foreach (var ship in Ships)
-                {
-                    if (ship.Hit(row, col))
-                        break;
-                }
-                return true; // Hit
-            }
-            else if (Grid[row, col] == Square.Empty)
-            {
-                Grid[row, col] = Square.Miss; // Mark miss
-            }
-            return false; // Miss
-        }
+        //public bool Fire(int row, int col)
+        //{
+        //    if (Grid[row, col] == Square.Ship)
+        //    {
+        //        Grid[row, col] = Square.Hit; // Mark hit
+        //        foreach (var ship in Ships)
+        //        {
+        //            if (ship.Hit(row, col))
+        //            {
+        //                break;
+        //            }
+        //        }
+        //        return true; // Hit
+        //    }
+        //    else if (Grid[row, col] == Square.Empty)
+        //    {
+        //        Grid[row, col] = Square.Miss; // Mark miss
+        //    }
+        //    return false; // Miss
+        //}
+
 
         // Display the board
-        public void Display()
-        {
-            for (int row = 0; row < Size; row++)
-            {
-                for (int col = 0; col < Size; col++)
-                {
-                    Console.Write(Grid[row, col].GetDescription() + " ");
-                }
-                Console.WriteLine();
-            }
-        }
+        //public void Display()
+        //{
+        //    for (int row = 0; row < Size; row++)
+        //    {
+        //        for (int col = 0; col < Size; col++)
+        //        {
+        //            Console.Write(Grid[row, col].GetDescription() + " ");
+        //        }
+        //        Console.WriteLine();
+        //    }
+        //}
+
+        //public void PrintBoard()
+        //{
+        //    for (int row = 0; row < Grid.GetLength(0); row++)
+        //    {
+        //        for (int col = 0; col < Grid.GetLength(1); col++)
+        //        {
+        //            var square = Grid[row, col];
+        //            Console.Write(square == Square.Ship ? "S " : ". ");
+        //        }
+        //        Console.WriteLine();
+        //    }
+        //}
+
     }
 
     public static class SquareExtensions

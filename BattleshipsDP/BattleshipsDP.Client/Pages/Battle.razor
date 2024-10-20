@@ -1,147 +1,256 @@
 ﻿@page "/battle"
 
-@using SharedLibrary
+@inject PlayerState PlayerState
 @inject NavigationManager Navigation
+@rendermode @(new InteractiveWebAssemblyRenderMode(false))
 
-<h3>Battle</h3>
+@if (PlayerState.HubConnection is not null)
+{
+    @if (!string.IsNullOrEmpty(WinnerTeam))
+    {
+        <h1 style="color: green;">@WinnerTeam Wins!</h1>
+    }
 
-<div class="tables-container">
-    <div class="table-wrapper">
-        <h4>Team Table</h4>
-        <div class="grid-container">
-            <!-- Column Headers -->
-            <div class="grid-header"></div> <!-- Empty top-left corner -->
-            @for (char col = 'A'; col < 'A' + teamBoard.Size; col++)
-            {
-                <div class="grid-header">@col</div>
-            }
+    <div>
+        <h3>Player Information</h3>
+        <p>Name: @PlayerName</p>
+        <p>Connection ID: @PlayerState.HubConnection.ConnectionId</p>
+        <p>Team: @PlayerTeam</p>
+    </div>
 
-            @for (int row = 0; row < teamBoard.Size; row++)
-            {
-                <!-- Row Header -->
-                <div class="grid-header">@row</div>
-                @for (int col = 0; col < teamBoard.Size; col++)
+    <div style="display: flex; gap: 50px;">
+        <!-- Team Board -->
+        <div>
+            <h3>Team Board (@PlayerTeam)</h3>
+            <div style="display: grid; grid-template-columns: repeat(10, 50px); grid-gap: 5px;">
+                @foreach (var row in TeamCells)
                 {
-                    <div class="grid-item">@teamBoard.Grid[row, col].GetDescription()</div>
+                    @foreach (var cell in row)
+                    {
+                        <div style="width: 50px; height: 50px; border: 1px solid black; background-color: @(cell.GetCellBackground())">
+                        </div>
+                    }
                 }
-            }
+            </div>
+        </div>
+
+        <div>
+            <!-- Compare Button -->
+            <button @onclick="ShootAtOpponentBoard">Fire</button>
+        </div>
+
+        <!-- Enemy Board -->
+        <div>
+            <h3>Enemy Board</h3>
+            <div style="display: grid; grid-template-columns: repeat(10, 50px); grid-gap: 5px;">
+                @foreach (var row in EnemyCells)
+                {
+                    @foreach (var cell in row)
+                    {
+                        <div @onclick="() => ToggleEnemyHighlight(cell)"
+                             style="width: 50px; height: 50px; border: 1px solid black; background-color: @(cell.GetCellBackground())">
+                        </div>
+                    }
+                }
+            </div>
         </div>
     </div>
 
-    <div class="fire-button-wrapper">
-        <button class="fire-button" @onclick="PlaceShips">Place Ships Randomly</button>
-    </div>
-
-
-    <div class="table-wrapper">
-        <h4>Enemy Table</h4>
-        <div class="grid-container">
-            <!-- Column Headers -->
-            <div class="grid-header"></div> <!-- Empty top-left corner -->
-            @for (char col = 'A'; col < 'A' + enemyBoard.Size; col++)
-            {
-                <div class="grid-header">@col</div>
-            }
-
-            @for (int row = 0; row < enemyBoard.Size; row++)
-            {
-                <!-- Row Header -->
-                <div class="grid-header">@row</div>
-                @for (int col = 0; col < enemyBoard.Size; col++)
-                {
-                    <div class="grid-item">@enemyBoard.Grid[row, col].GetDescription()</div>
-                }
-            }
+    @if (!string.IsNullOrEmpty(gameOverMessage))
+    {
+        <div style="padding: 20px; background-color: lightgreen; border: 2px solid green; font-weight: bold;">
+            @gameOverMessage
         </div>
-    </div>
-</div>
-
-<style>
-    .tables-container {
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
-        margin: auto;
-        max-width: 1200px;
-        gap: 30px;
     }
 
-    .table-wrapper {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .grid-container {
-        display: grid;
-        grid-template-columns: repeat(11, 1fr);
-        gap: 1px;
-        width: 100%;
-        max-width: 420px;
-    }
-
-    .grid-header {
-        background-color: #d0d0d0;
-        border: 1px solid #ccc;
-        text-align: center;
-        padding: 15px;
-        font-size: 12px;
-        font-weight: bold;
-    }
-
-    .grid-item {
-        background-color: #f0f0f0;
-        border: 1px solid #ccc;
-        text-align: center;
-        padding: 15px;
-        font-size: 12px;
-    }
-
-    .fire-button-wrapper {
-        display: flex;
-        align-items: center;
-    }
-
-    .fire-button {
-        padding: 10px 20px;
-        font-size: 16px;
-        cursor: pointer;
-    }
-</style>
+}
 
 @code {
-    private Board teamBoard;
-    private Board enemyBoard;
+    private string PlayerName { get; set; } = string.Empty;
+    //private string PlayerConnectionId { get; set; } = string.Empty;
+    private string PlayerTeam { get; set; } = string.Empty;
+    private string WinnerTeam { get; set; } = string.Empty;
+    private int? selectedRow = null;
+    private int? selectedCol = null;
+    private string gameOverMessage = string.Empty;
 
-    protected override void OnInitialized()
+    private List<List<GridCell>> TeamCells = new();
+    private List<List<GridCell>> EnemyCells = new();
+
+    protected override async Task OnInitializedAsync()
     {
-        teamBoard = new Board();
-        enemyBoard = new Board();
+        // Initialize both boards (10x10 grid each)
+        for (int row = 0; row < 10; row++)
+        {
+            var teamRow = new List<GridCell>();
+            var enemyRow = new List<GridCell>();
+            for (int col = 0; col < 10; col++)
+            {
+                teamRow.Add(new GridCell { Row = row, Col = col });
+                enemyRow.Add(new GridCell { Row = row, Col = col });
+            }
+            TeamCells.Add(teamRow);
+            EnemyCells.Add(enemyRow);
+        }
+
+        if (IsHubConnectionActive())
+        {
+            if (PlayerState.HubConnection.State == HubConnectionState.Disconnected)
+            {
+                await PlayerState.HubConnection.StartAsync();
+            }
+
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ // Receive player info from the server
+            PlayerState.HubConnection.On<string, string, string>("ReceivePlayerInfo", (name, connectionId, team) =>
+            {
+                PlayerName = name;
+                //PlayerConnectionId = connectionId;
+                PlayerTeam = team;
+
+                Console.WriteLine($"Received player info: Name={name}, ConnectionID={connectionId}, Team={team}");
+                InvokeAsync(StateHasChanged);
+            });
+
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ // Receive board info from the server
+            PlayerState.HubConnection.On<List<List<Square>>>("ReceiveBoardInfo", (receivedCells) =>
+            {
+                // Update TeamCells with the received board state
+                TeamCells = receivedCells.Select(row => row.Select(cell => new GridCell
+                    {
+                        State = cell,
+                        Row = receivedCells.IndexOf(row),
+                        Col = row.IndexOf(cell)
+                    }).ToList()).ToList();
+
+                InvokeAsync(StateHasChanged);
+            });
+
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            PlayerState.HubConnection.On<int, int>("ReceiveBlockHighlight", (row, col) =>
+            {
+                // Clear the previous highlight on the enemy board
+                foreach (var enemyRow in EnemyCells)
+                {
+                    foreach (var enemyCell in enemyRow)
+                    {
+                        enemyCell.IsHighlighted = false;
+                    }
+                }
+
+                // Highlight the new cell
+                var cellToHighlight = EnemyCells[row][col];
+                cellToHighlight.IsHighlighted = true;
+
+                InvokeAsync(StateHasChanged);
+            });
+
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ // Receive the result of the shoot on enemy board
+            PlayerState.HubConnection.On<int, int, string>("ReceiveShootResult", async (row, col, result) =>
+            {
+                await HandleShootResult(row, col, result);
+            });
+
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ // Receive the result of the shoot on team board from enemy
+            PlayerState.HubConnection.On<int, int, string>("ReceiveTeamHitResult", async (row, col, result) =>
+            {
+                await HandleTeamHitResult(row, col, result);
+            });
+
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ // Receive the game over message
+            PlayerState.HubConnection.On<string>("ReceiveGameOver", async (message) =>
+            {
+                await HandleGameOver(message);
+            });
+
+            // Notify the server that this player is ready
+            await PlayerState.HubConnection.SendAsync("PlayerReady");
+        }
     }
 
-    private void PlaceShips()
+    private async Task ToggleEnemyHighlight(GridCell cell)
     {
-        Console.WriteLine("StartGame method called");
+        if (cell == null) return;
 
-        // Randomly place ships on both boards
-        var shipTypes = new List<(Ship, Square)>
+        // Prevent selecting a cell that has already been attacked
+        if (cell.State == Square.Hit || cell.State == Square.Miss)
         {
-            (new Ship("Destroyer", 2), Square.Ship),
-            (new Ship("Submarine", 3), Square.Ship),
-            (new Ship("Cruiser", 3), Square.Ship),
-            (new Ship("Battleship", 4), Square.Ship),
-            (new Ship("Carrier", 5), Square.Ship)
-        };
+            return; // Do nothing if the cell has already been shot at
+        }
 
-        teamBoard.RandomlyPlaceShips(shipTypes);
-        enemyBoard.RandomlyPlaceShips(shipTypes);
+        // Clear previous highlights
+        foreach (var enemyRow in EnemyCells)
+        {
+            foreach (var enemyCell in enemyRow)
+            {
+                enemyCell.IsHighlighted = false;
+            }
+        }
 
-        // Debugging output to verify ship placement
-        Console.WriteLine("Team Board:");
-        teamBoard.Display();
-        Console.WriteLine("Enemy Board:");
-        enemyBoard.Display();
+        // Highlight the selected cell and store the coordinates
+        cell.IsHighlighted = true;
+        selectedRow = cell.Row;
+        selectedCol = cell.Col;
+
+        // Update the server so teammates are informed
+        if (IsHubConnectionActive())
+        {
+            await PlayerState.HubConnection.SendAsync("HighlightBlockForTeam", cell.Row, cell.Col);
+        }
 
         StateHasChanged();
     }
+
+    private async Task ShootAtOpponentBoard()
+    {
+        if (selectedRow.HasValue && selectedCol.HasValue)
+        {
+            if (IsHubConnectionActive())
+            {
+                await PlayerState.HubConnection.SendAsync("ShootAtOpponent", selectedRow.Value, selectedCol.Value);
+            }
+        }
+        else
+        {
+            Console.WriteLine("No cell selected to compare.");
+        }
+    }
+
+    private async Task HandleShootResult(int row, int col, string result)
+    {
+        var cell = EnemyCells[row][col];
+        if (result == "hit")
+        {
+            cell.State = Square.Hit;
+        }
+        else if (result == "miss")
+        {
+            cell.State = Square.Miss;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleTeamHitResult(int row, int col, string result)
+    {
+        var cell = TeamCells[row][col];
+        if (result == "hit")
+        {
+            cell.State = Square.Hit;
+        }
+        else if (result == "miss")
+        {
+            cell.State = Square.Miss;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleGameOver(string message)
+    {
+        gameOverMessage = message;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private bool IsHubConnectionActive() => PlayerState.HubConnection is not null;
 }
