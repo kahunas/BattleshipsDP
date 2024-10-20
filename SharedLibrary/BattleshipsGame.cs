@@ -26,6 +26,16 @@ namespace SharedLibrary
         public bool GameStarted { get; set; } = false;
         public bool GameOver { get; set; } = false;
 
+        List<(Ship, Square)> shipsToPlace = new List<(Ship, Square)>
+            {
+                (new Ship("Destroyer", 2), Square.Ship),
+                (new Ship("Submarine", 3), Square.Ship),
+                (new Ship("Cruiser", 3), Square.Ship),
+                (new Ship("Battleship", 4), Square.Ship),
+                (new Ship("Carrier", 5), Square.Ship)
+            };
+        
+
 
         public BattleshipsGame()
         {
@@ -50,28 +60,9 @@ namespace SharedLibrary
             ATeamBoard = ATeam.Board;
             BTeamBoard = BTeam.Board;
 
-            // Define ships to be placed
-            List<(Ship, Square)> shipsToPlaceTeamA = new List<(Ship, Square)>
-            {
-                (new Ship("Destroyer", 2), Square.Ship),
-                (new Ship("Submarine", 3), Square.Ship),
-                (new Ship("Cruiser", 3), Square.Ship),
-                (new Ship("Battleship", 4), Square.Ship),
-                (new Ship("Carrier", 5), Square.Ship)
-            };
-
-            List<(Ship, Square)> shipsToPlaceTeamB = new List<(Ship, Square)>
-            {
-                (new Ship("Destroyer", 2), Square.Ship),
-                (new Ship("Submarine", 3), Square.Ship),
-                (new Ship("Cruiser", 3), Square.Ship),
-                (new Ship("Battleship", 4), Square.Ship),
-                (new Ship("Carrier", 5), Square.Ship)
-            };
-
             // Randomly place ships for both teams
-            ATeamBoard.RandomlyPlaceShips(shipsToPlaceTeamA);
-            BTeamBoard.RandomlyPlaceShips(shipsToPlaceTeamB);
+            ATeamBoard.RandomlyPlaceShips(shipsToPlace);
+            BTeamBoard.RandomlyPlaceShips(shipsToPlace);
 
             PrintTeams();
 
@@ -153,6 +144,8 @@ namespace SharedLibrary
             return GetTeamByPlayer(connectionId) == "Team A" ? ATeam.Players : BTeam.Players;
         }
 
+        
+
         public string ShootCell(int row, int col, string connectionId, out bool isGameOver)
         {
             isGameOver = false;
@@ -160,39 +153,40 @@ namespace SharedLibrary
             // Determine the attacking and defending teams
             string attackingTeam = GetTeamByPlayer(connectionId);
             var opponentBoard = attackingTeam == "Team A" ? BTeamBoard : ATeamBoard;
-
-            // Check if cell has already been shot
-            if (opponentBoard.Grid[row, col] == Square.Hit || opponentBoard.Grid[row, col] == Square.Miss)
-            {
-                return "already_shot";
-            }
-
+            
             // Determine if it's a hit or miss
-            string result;
-            if (opponentBoard.Grid[row, col] == Square.Ship)
-            {
-                opponentBoard.Grid[row, col] = Square.Hit;
-                result = "hit";
-
-                foreach (var ship in opponentBoard.Ships)
+            string result = null;
+            
+                // Check if cell has already been shot
+                if (opponentBoard.Grid[row, col] == Square.Hit || opponentBoard.Grid[row, col] == Square.Miss)
                 {
-                    if (ship.Hit(row, col))
+                    return "already_shot";
+                }
+
+                if (opponentBoard.Grid[row, col] == Square.Ship)
+                {
+                    opponentBoard.Grid[row, col] = Square.Hit;
+                    result = "hit";
+
+                    foreach (var ship in opponentBoard.Ships)
                     {
-                        break;
+                        if (ship.Hit(row, col))
+                        {
+                            break;
+                        }
+                    }
+
+                    if (opponentBoard.AllShipsDestroyed())
+                    {
+                        isGameOver = true;
                     }
                 }
-
-                if (opponentBoard.AllShipsDestroyed())
+                else
                 {
-                    isGameOver = true;
+                    opponentBoard.Grid[row, col] = Square.Miss;
+                    result = "miss";
                 }
-            }
-            else
-            {
-                opponentBoard.Grid[row, col] = Square.Miss;
-                result = "miss";
-            }
-
+            
             return result;
         }
 
@@ -210,5 +204,7 @@ namespace SharedLibrary
                 Console.WriteLine($"Player ID: {player.ConnectionId}, Name: {player.Name}");
             }
         }
+
+        
     }
 }

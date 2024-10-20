@@ -33,11 +33,21 @@
                 }
             </div>
         </div>
-
+        <div>
+            <label for="selectedShot">Choose a Shot:</label>
+            <select @bind="selectedShot" id="selectedShot" name="selectedShot">
+                <option value="Simple">Simple shot</option>
+                <option value="Big">Big shot</option>
+                <option value="Piercer">Piercer shot</option>
+                <option value="Slasher">Slasher shot</option>
+                <option value="Cross">Cross shot</option>
+            </select>
+        </div>
         <div>
             <!-- Compare Button -->
             <button @onclick="ShootAtOpponentBoard">Fire</button>
         </div>
+        
 
         <!-- Enemy Board -->
         <div>
@@ -72,6 +82,7 @@
     private string WinnerTeam { get; set; } = string.Empty;
     private int? selectedRow = null;
     private int? selectedCol = null;
+    private string selectedShot;
     private string gameOverMessage = string.Empty;
 
     private List<List<GridCell>> TeamCells = new();
@@ -202,11 +213,11 @@
 
     private async Task ShootAtOpponentBoard()
     {
-        if (selectedRow.HasValue && selectedCol.HasValue)
+        if (selectedRow.HasValue && selectedCol.HasValue && selectedShot != null)
         {
             if (PlayerState.HubConnection is not null)
             {
-                await PlayerState.HubConnection.SendAsync("ShootAtOpponent", selectedRow.Value, selectedCol.Value);
+                await PlayerState.HubConnection.SendAsync("ShootAtOpponent", selectedRow.Value, selectedCol.Value, selectedShot);
             }
         }
         else
