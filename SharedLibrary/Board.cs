@@ -156,18 +156,18 @@ namespace SharedLibrary
         //    }
         //}
 
-        public void PrintBoard()
-        {
-            for (int row = 0; row < Grid.GetLength(0); row++)
-            {
-                for (int col = 0; col < Grid.GetLength(1); col++)
-                {
-                    var square = Grid[row, col];
-                    Console.Write(square == Square.Ship ? "S " : ". ");
-                }
-                Console.WriteLine();
-            }
-        }
+        //public void PrintBoard()
+        //{
+        //    for (int row = 0; row < Grid.GetLength(0); row++)
+        //    {
+        //        for (int col = 0; col < Grid.GetLength(1); col++)
+        //        {
+        //            var square = Grid[row, col];
+        //            Console.Write(square == Square.Ship ? "S " : ". ");
+        //        }
+        //        Console.WriteLine();
+        //    }
+        //}
 
     }
 
