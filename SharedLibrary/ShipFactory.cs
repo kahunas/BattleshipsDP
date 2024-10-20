@@ -8,41 +8,41 @@ namespace SharedLibrary
 {
     public class BlueShipFactory : IShipFactory
     {
-        public Ship CreateDestroyer(string name = "Destroyer", int size = 2)
+        public Ship CreateDestroyer(string name = "Destroyer")
         {
-            return new Destroyer(name, size);
+            return new Destroyer(name, 2);
         }
-        public Ship CreateSubmarine(string name = "Submarine", int size = 3)
+        public Ship CreateSubmarine(string name = "Submarine")
         {
-            return new Submarine(name, size);
+            return new Submarine(name, 3);
         }
-        public Ship CreateBattleship(string name = "Battleship", int size = 4)
+        public Ship CreateBattleship(string name = "Battleship")
         {
-            return new Battleship(name, size);
+            return new Battleship(name, 4);
         }
-        public Ship CreateCarrier(string name = "Carrier", int size = 5)
+        public Ship CreateCarrier(string name = "Carrier")
         {
-            return new Carrier(name, size);
+            return new Carrier(name, 5);
         }
     }
 
     public class RedShipFactory : IShipFactory
     {
-        public Ship CreateDestroyer(string name = "Destroyer", int size = 2)
+        public Ship CreateDestroyer(string name = "Destroyer")
         {
-            return new Destroyer(name, size);
+            return new Destroyer(name, 2);
         }
-        public Ship CreateSubmarine(string name = "Submarine", int size = 3)
+        public Ship CreateSubmarine(string name = "Submarine")
         {
-            return new Submarine(name, size);
+            return new Submarine(name, 3);
         }
-        public Ship CreateBattleship(string name = "Battleship", int size = 4)
+        public Ship CreateBattleship(string name = "Battleship")
         {
-            return new Battleship(name, size);
+            return new Battleship(name, 4);
         }
-        public Ship CreateCarrier(string name = "Carrier", int size = 5)
+        public Ship CreateCarrier(string name = "Carrier")
         {
-            return new Carrier(name, size);
+            return new Carrier(name, 5);
         }
     }
 }

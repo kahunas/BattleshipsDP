@@ -8,9 +8,9 @@ namespace SharedLibrary
 {
     public interface IShipFactory
     {
-        Ship CreateDestroyer(string name, int size);
-        Ship CreateSubmarine(string name, int size);
-        Ship CreateBattleship(string name, int size);
-        Ship CreateCarrier(string name, int size);
+        Ship CreateDestroyer(string name);
+        Ship CreateSubmarine(string name);
+        Ship CreateBattleship(string name);
+        Ship CreateCarrier(string name);
     }
 }
