@@ -51,34 +51,39 @@ namespace SharedLibrary
             BTeamBoard = BTeam.Board;
 
             // Define ships to be placed
+            IShipFactory blueShipFactory = new BlueShipFactory();
+            IShipFactory redShipFactory = new RedShipFactory();
+
+
+
             List<(Ship, Square)> shipsToPlaceTeamA = new List<(Ship, Square)>
             {
-                (new Ship("Destroyer", 2), Square.Ship),
-                (new Ship("Submarine", 3), Square.Ship),
-                (new Ship("Cruiser", 3), Square.Ship),
-                (new Ship("Battleship", 4), Square.Ship),
-                (new Ship("Carrier", 5), Square.Ship)
+                (blueShipFactory.CreateDestroyer("Destroyer"), Square.Ship),
+                (blueShipFactory.CreateSubmarine("Submarine"), Square.Ship),
+                (blueShipFactory.CreateSubmarine("Submarine"), Square.Ship),
+                (blueShipFactory.CreateBattleship("Battleship"), Square.Ship),
+                (blueShipFactory.CreateCarrier("Carrier"), Square.Ship)
             };
 
             List<(Ship, Square)> shipsToPlaceTeamB = new List<(Ship, Square)>
             {
-                (new Ship("Destroyer", 2), Square.Ship),
-                (new Ship("Submarine", 3), Square.Ship),
-                (new Ship("Cruiser", 3), Square.Ship),
-                (new Ship("Battleship", 4), Square.Ship),
-                (new Ship("Carrier", 5), Square.Ship)
+                (redShipFactory.CreateDestroyer("Destroyer"), Square.Ship),
+                (redShipFactory.CreateSubmarine("Submarine"), Square.Ship),
+                (redShipFactory.CreateSubmarine("Submarine"), Square.Ship),
+                (redShipFactory.CreateBattleship("Battleship"), Square.Ship),
+                (redShipFactory.CreateCarrier("Carrier"), Square.Ship)
             };
 
             // Randomly place ships for both teams
             ATeamBoard.RandomlyPlaceShips(shipsToPlaceTeamA);
             BTeamBoard.RandomlyPlaceShips(shipsToPlaceTeamB);
 
-            PrintTeams();
+            //PrintTeams();
 
 
             // Set the first player to start the game
             CurrentPlayerId = ATeamPlayer1Id;
-            Console.WriteLine($"First turn goes to Player 1 of Team A: {CurrentPlayerId}");
+            //Console.WriteLine($"First turn goes to Player 1 of Team A: {CurrentPlayerId}");
 
             // Debug: Print the boards after placing ships
             //Console.WriteLine("Team A Board:");
@@ -196,19 +201,19 @@ namespace SharedLibrary
             return result;
         }
 
-        public void PrintTeams()
-        {
-            Console.WriteLine("Team A:");
-            foreach (var player in ATeam.Players)
-            {
-                Console.WriteLine($"Player ID: {player.ConnectionId}, Name: {player.Name}");
-            }
+        //public void PrintTeams()
+        //{
+        //    Console.WriteLine("Team A:");
+        //    foreach (var player in ATeam.Players)
+        //    {
+        //        Console.WriteLine($"Player ID: {player.ConnectionId}, Name: {player.Name}");
+        //    }
 
-            Console.WriteLine("Team B:");
-            foreach (var player in BTeam.Players)
-            {
-                Console.WriteLine($"Player ID: {player.ConnectionId}, Name: {player.Name}");
-            }
-        }
+        //    Console.WriteLine("Team B:");
+        //    foreach (var player in BTeam.Players)
+        //    {
+        //        Console.WriteLine($"Player ID: {player.ConnectionId}, Name: {player.Name}");
+        //    }
+        //}
     }
 }

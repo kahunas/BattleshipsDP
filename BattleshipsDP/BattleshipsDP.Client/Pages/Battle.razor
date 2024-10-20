@@ -14,7 +14,7 @@
     <div>
         <h3>Player Information</h3>
         <p>Name: @PlayerName</p>
-        <p>Connection ID: @PlayerConnectionId</p>
+        <p>Connection ID: @PlayerState.HubConnection.ConnectionId</p>
         <p>Team: @PlayerTeam</p>
     </div>
 
@@ -67,7 +67,7 @@
 
 @code {
     private string PlayerName { get; set; } = string.Empty;
-    private string PlayerConnectionId { get; set; } = string.Empty;
+    //private string PlayerConnectionId { get; set; } = string.Empty;
     private string PlayerTeam { get; set; } = string.Empty;
     private string WinnerTeam { get; set; } = string.Empty;
     private int? selectedRow = null;
@@ -104,7 +104,7 @@
             PlayerState.HubConnection.On<string, string, string>("ReceivePlayerInfo", (name, connectionId, team) =>
             {
                 PlayerName = name;
-                PlayerConnectionId = connectionId;
+                //PlayerConnectionId = connectionId;
                 PlayerTeam = team;
 
                 Console.WriteLine($"Received player info: Name={name}, ConnectionID={connectionId}, Team={team}");
