@@ -36,7 +36,12 @@
             <input class="input-field" @bind="currentRoomName" placeholder="Room Name" />
         </div>
         <div class="form-group">
-            <button class="btn" @onclick="CreateRoom">Create Room</button>
+            <div>
+                <button type="button" class="btn" @onclick="@(() => CreateRoomStandart())">Create Standart Room</button>
+                <button type="button" class="btn" @onclick="@(() => CreateRoomMedium())">Create Medium Room</button>
+                <button type="button" class="btn" @onclick="@(() => CreateRoomAdvanced())">Create Advanced Room</button>
+            </div>
+            @* <button class="btn" @onclick="CreateRoom">Create Room</button> *@
         </div>
         @if (!roomNameValid)
         {
@@ -115,6 +120,45 @@
 </style>
 
 @code {
+    private async Task CreateRoomStandart()
+    {
+        if (!IsHubConnectionActive()) return;
+
+        if (!string.IsNullOrEmpty(currentRoomName))
+        {
+            roomNameValid = true;
+            currentRoom = await PlayerState.HubConnection.InvokeAsync<GameRoom>("CreateStandartRoom",
+                currentRoomName, playerName);
+            await NavigateToRoom(currentRoom.RoomId);
+        }
+    }
+
+    private async Task CreateRoomMedium()
+    {
+        if (!IsHubConnectionActive()) return;
+
+        if (!string.IsNullOrEmpty(currentRoomName))
+        {
+            roomNameValid = true;
+            currentRoom = await PlayerState.HubConnection.InvokeAsync<GameRoom>("CreateMediumRoom",
+                currentRoomName, playerName);
+            await NavigateToRoom(currentRoom.RoomId);
+        }
+    }
+
+    private async Task CreateRoomAdvanced()
+    {
+        if (!IsHubConnectionActive()) return;
+
+        if (!string.IsNullOrEmpty(currentRoomName))
+        {
+            roomNameValid = true;
+            currentRoom = await PlayerState.HubConnection.InvokeAsync<GameRoom>("CreateAdvancedRoom",
+                currentRoomName, playerName);
+            await NavigateToRoom(currentRoom.RoomId);
+        }
+    }
+
     protected override async Task OnInitializedAsync()
     {
         await PlayerState.InitializeHubConnection("/gamehub", NavigationManager);

@@ -10,13 +10,15 @@ namespace SharedLibrary
     {
         public string RoomId { get; set; }
         public string RoomName { get; set; }
+        public string Type { get; set; }
         public List<Player> Players { get; set; }
         public BattleshipsGame Game { get; set; }
 
-        public GameRoom(string roomId, string roomName)
+        public GameRoom(string roomId, string roomName, string type)
         {
             RoomId = roomId;
             RoomName = roomName;
+            Type = type;
             Players = new List<Player>();
             Game = new BattleshipsGame();
         }

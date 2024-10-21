@@ -14,7 +14,7 @@ namespace SharedLibrary
         public List<Ship> Ships { get; set; }
         private Random random = new Random();
 
-        public Board(int size = 10)
+        public Board(int size)
         {
             Size = size;
             Grid = new Square[Size, Size];
@@ -120,6 +120,8 @@ namespace SharedLibrary
             return PlaceShip(ship, coordinates);
         }
 
+        
+
         // Method to fire at a specific coordinate on the board
         //public bool Fire(int row, int col)
         //{
@@ -169,6 +171,21 @@ namespace SharedLibrary
         //    }
         //}
 
+    }
+
+    public class StandartBoard : Board
+    {
+        public StandartBoard(int size) : base(8) { }
+    }
+
+    public class MediumBoard : Board
+    {
+        public MediumBoard(int size) : base(12) { }
+    }
+
+    public class AdvancedBoard : Board
+    {
+        public AdvancedBoard(int size) : base(16) { }
     }
 
     public static class SquareExtensions

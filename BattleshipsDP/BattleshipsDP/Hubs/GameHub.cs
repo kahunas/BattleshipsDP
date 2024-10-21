@@ -25,9 +25,9 @@ namespace BattleshipsDP.Hubs
             await base.OnDisconnectedAsync(exception);
         }
 
-        public async Task<GameRoom> CreateRoom(string name, string playerName)
+        public async Task<GameRoom> CreateStandartRoom(string name, string playerName)
         {
-            GameRoom room = _gameService.CreateRoom(name);
+            GameRoom room = _gameService.CreateRoomStandart(name);
             var newPlayer = new Player(Context.ConnectionId, playerName);
             _gameService.TryAddPlayerToRoom(room.RoomId, newPlayer);
             //room.TryAddPlayer(newPlayer);

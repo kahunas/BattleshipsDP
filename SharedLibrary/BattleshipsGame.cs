@@ -26,6 +26,8 @@ namespace SharedLibrary
         public bool GameStarted { get; set; } = false;
         public bool GameOver { get; set; } = false;
 
+        public int size { get; set; }
+
 
         public BattleshipsGame()
         {
@@ -102,12 +104,12 @@ namespace SharedLibrary
             ATeam = new Team("Team A")
             {
                 Players = new List<Player> { players[0], players[1] },
-                Board = new Board()
+                Board = new Board(size)
             };
             BTeam = new Team("Team B")
             {
                 Players = new List<Player> { players[2], players[3] },
-                Board = new Board()
+                Board = new Board(size)
             };
 
             ATeamPlayer1Id = players[0].ConnectionId;

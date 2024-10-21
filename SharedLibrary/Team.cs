@@ -15,7 +15,7 @@ namespace SharedLibrary
         public Team(string name)
         {
             Name = name;
-            Board = new Board();
+            Board = new Board(size);
             Players = new List<Player>();
         }
     }
