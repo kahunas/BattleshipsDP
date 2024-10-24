@@ -16,8 +16,11 @@
         <p>Name: @PlayerName</p>
         <p>Connection ID: @PlayerConnectionId</p>
         <p>Team: @PlayerTeam</p>
+        @if (isPlayerTurn)
+        {
+            <h2 style="color: blue;">Your turn!</h2>
+        }
     </div>
-
     <div style="display: flex; gap: 50px;">
         <!-- Team Board -->
         <div>
@@ -82,8 +85,8 @@
     private string WinnerTeam { get; set; } = string.Empty;
     private int? selectedRow = null;
     private int? selectedCol = null;
-    private string selectedShot;
-    private string isTurn;
+    private string selectedShot = "Simple";
+    private bool isPlayerTurn = false;
     private string gameOverMessage = string.Empty;
 
     private List<List<GridCell>> TeamCells = new();
@@ -120,6 +123,19 @@
                 PlayerTeam = team;
 
                 Console.WriteLine($"Received player info: Name={name}, ConnectionID={connectionId}, Team={team}");
+                InvokeAsync(StateHasChanged);
+            });
+
+            PlayerState.HubConnection.On("YourTurn", () =>
+            {
+                isPlayerTurn = true;  // Rodome žinutę „Your turn“
+                InvokeAsync(StateHasChanged);
+            });
+
+            // Kitas įvykis „NotYourTurn“
+            PlayerState.HubConnection.On("NotYourTurn", () =>
+            {
+                isPlayerTurn = false;  // Paslepiame „Your turn“ pranešimą
                 InvokeAsync(StateHasChanged);
             });
 
@@ -173,6 +189,8 @@
             {
                 await HandleGameOver(message);
             });
+
+            
 
             // Notify the server that this player is ready
             await PlayerState.HubConnection.SendAsync("PlayerReady");
