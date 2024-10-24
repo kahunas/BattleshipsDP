@@ -6,27 +6,29 @@ using System.Threading.Tasks;
 
 namespace SharedLibrary
 {
-    public class Shot
+    public class Shot : IShot
     {
-        public string Name { get; set; }
-        List<(int, int)> Spread { get; set; }
+        public string Name { get; private set; }
+        public List<(int, int)> Spread { get; private set; }
 
         public Shot(string name, List<(int, int)> spread)
         {
             Name = name;
-            Spread = spread;
+            Spread = spread ?? throw new ArgumentNullException(nameof(spread));
         }
-        
+
         public List<(int, int)> ShotCoordinates(int row, int col)
         {
-            List<(int, int)> coordinates = new List<(int, int)> ();
+            var coordinates = new List<(int, int)>();
 
-            foreach ((int, int) spread in Spread)
+            foreach (var spread in Spread)
             {
-                if (row + spread.Item1 >= 0 && col + spread.Item2 >= 0)
+                int newRow = row + spread.Item1;
+                int newCol = col + spread.Item2;
+
+                if (newRow >= 0 && newCol >= 0)
                 {
-                    (int, int) coordinate = (row + spread.Item1, col + spread.Item2);
-                    coordinates.Add(coordinate);
+                    coordinates.Add((newRow, newCol));
                 }
             }
             return coordinates;

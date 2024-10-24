@@ -1,4 +1,4 @@
-﻿using BattleshipsDP.Client.Pages;
+﻿using BattleshipsDP.Client;
 using Microsoft.AspNetCore.SignalR;
 using SharedLibrary;
 using System.Numerics;
@@ -54,11 +54,9 @@ namespace BattleshipsDP.Hubs
 
         public async Task<GameRoom> GetRoomById(string roomId) => _gameService.GetRoomById(roomId);
 
-        public List<Shot> Shots;
 
         public async Task StartGame(string roomId)
         {
-            DefineShots();
             var room = _gameService.GetRoomById(roomId);
             if (room != null)
             {
@@ -131,130 +129,74 @@ namespace BattleshipsDP.Hubs
             }
         }
 
-        private void DefineShots()
-        {
-            List<(int, int)> SimpleSpread = new List<(int, int)>()
-            {
-                (0,0),
-            };
-            List<(int, int)> CrossSpread = new List<(int, int)>()
-            {
-                (0,0),
-                (1,0),
-                (-1,0),
-                (0,1),
-                (0,-1)
-            };
-
-            List<(int, int)> PiercerSpread = new List<(int, int)>()
-            {
-                (0,0),
-                (1,0),
-                (2,0),
-                (3,0)
-            };
-
-            List<(int, int)> SlasherSpread = new List<(int, int)>()
-            {
-                (0,0),
-                (0,1),
-                (0,2),
-                (0,3)
-            };
-            List<(int, int)> BigSpread = new List<(int, int)>()
-            {
-                (0,0),
-                (1,0),
-                (1,1),
-                (0,1),
-                (-1,1),
-                (-1,0),
-                (-1,-1),
-                (0,-1),
-                (1,-1)
-            };
-
-            Shots = new List<Shot>
-            {
-                new Shot("Simple", SimpleSpread),
-                new Shot("Big", BigSpread),
-                new Shot("Piercer", PiercerSpread),
-                new Shot("Slasher", SlasherSpread),
-                new Shot("Cross", CrossSpread)
-            };
-        }
-
-        private List<(int, int)> FindCoordinates(int row, int col, string type)
-        {
-            foreach (var shot in Shots)
-            {
-                if (shot.Name.Equals(type))
-                {
-                    return shot.ShotCoordinates(row, col);
-                }
-            }
-            return null;
-        }
+        
 
         public async Task ShootAtOpponent(int row, int col, string type)
         {
-            DefineShots();
+            
             var connectionId = Context.ConnectionId;
             var room = _gameService.GetRoomByPlayerId(connectionId);
+            var shots = room.Game.DefineShots();
 
-            // Check if the room exists
             if (room == null) return;
-
-            // Check if it's the current player's turn
             if (room.Game.CurrentPlayerId != connectionId)
             {
                 await Clients.Client(connectionId).SendAsync("NotYourTurn");
                 return;
             }
-            List<(int, int)> coordinates = FindCoordinates(row, col, type);
+
+            var shot = shots.FirstOrDefault(s => s.Name.Equals(type, StringComparison.OrdinalIgnoreCase));
+            if (shot == null)
+            {
+                await Clients.Client(connectionId).SendAsync("InvalidShotType");
+                return;
+            }
+
+            var coordinates = shot.ShotCoordinates(row, col);
             bool isGameOver = false;
 
-            // Iterate through each coordinate and shoot
             foreach (var hit in coordinates)
             {
-                // Shoot at the cell
                 string result = room.Game.ShootCell(hit.Item1, hit.Item2, connectionId, out isGameOver);
 
-                // Check if the cell has already been shot
                 if (result == "already_shot")
                 {
-                    // You can choose to notify the player about already shot cells
                     await Clients.Client(connectionId).SendAsync("AlreadyShot", hit.Item1, hit.Item2);
-                    continue; // Skip to the next coordinate
+                    continue;
                 }
 
-                // Notify teammates of the shoot result
-                var teammates = room.Game.GetTeammates(connectionId);
-                foreach (var teammate in teammates)
-                {
-                    await Clients.Client(teammate.ConnectionId).SendAsync("ReceiveShootResult", hit.Item1, hit.Item2, result);
-                }
+                await NotifyTeammatesOfShot(room, connectionId, hit, result);
+                await NotifyOpponentsOfShot(room, connectionId, hit, result);
 
-                // Notify opponent teammates of the hit result
-                var opponentTeammates = teammates == room.Game.ATeam.Players ? room.Game.BTeam.Players : room.Game.ATeam.Players;
-                foreach (var opponentTeammate in opponentTeammates)
-                {
-                    await Clients.Client(opponentTeammate.ConnectionId).SendAsync("ReceiveTeamHitResult", hit.Item1, hit.Item2, result);
-                }
-
-                // If the game is over, notify everyone and break the loop
                 if (isGameOver)
                 {
                     await Clients.Group(room.RoomId).SendAsync("ReceiveGameOver", $"{room.Game.GetTeamByPlayer(connectionId)} wins!");
                     room.Game.GameOver = true;
-                    break; // Exit the loop since the game is over
+                    break;
                 }
             }
 
-            // If the game is not over, switch to the next player
             if (!isGameOver)
             {
                 room.Game.SwitchToNextPlayer();
+            }
+        }
+
+        private async Task NotifyTeammatesOfShot(GameRoom room, string connectionId, (int, int) hit, string result)
+        {
+            var teammates = room.Game.GetTeammates(connectionId);
+            foreach (var teammate in teammates)
+            {
+                await Clients.Client(teammate.ConnectionId).SendAsync("ReceiveShootResult", hit.Item1, hit.Item2, result);
+            }
+        }
+
+        private async Task NotifyOpponentsOfShot(GameRoom room, string connectionId, (int, int) hit, string result)
+        {
+            var opponentTeammates = room.Game.GetTeammates(connectionId) == room.Game.ATeam.Players ? room.Game.BTeam.Players : room.Game.ATeam.Players;
+            foreach (var opponentTeammate in opponentTeammates)
+            {
+                await Clients.Client(opponentTeammate.ConnectionId).SendAsync("ReceiveTeamHitResult", hit.Item1, hit.Item2, result);
             }
         }
     }

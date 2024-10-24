@@ -25,6 +25,7 @@ namespace SharedLibrary
         public string CurrentPlayerId { get; set; }
         public bool GameStarted { get; set; } = false;
         public bool GameOver { get; set; } = false;
+        public int boardSize = 10;
 
         List<(Ship, Square)> shipsToPlace = new List<(Ship, Square)>
             {
@@ -66,7 +67,6 @@ namespace SharedLibrary
 
             PrintTeams();
 
-
             // Set the first player to start the game
             CurrentPlayerId = ATeamPlayer1Id;
             Console.WriteLine($"First turn goes to Player 1 of Team A: {CurrentPlayerId}");
@@ -88,12 +88,12 @@ namespace SharedLibrary
             ATeam = new Team("Team A")
             {
                 Players = new List<Player> { players[0], players[1] },
-                Board = new Board()
+                Board = new Board(boardSize)
             };
             BTeam = new Team("Team B")
             {
                 Players = new List<Player> { players[2], players[3] },
-                Board = new Board()
+                Board = new Board(boardSize)
             };
 
             ATeamPlayer1Id = players[0].ConnectionId;
@@ -156,11 +156,12 @@ namespace SharedLibrary
             
             // Determine if it's a hit or miss
             string result = null;
-            
+            if (boardSize > row && boardSize > col)
+            {
                 // Check if cell has already been shot
                 if (opponentBoard.Grid[row, col] == Square.Hit || opponentBoard.Grid[row, col] == Square.Miss)
                 {
-                    return "already_shot";
+                    result = "already_shot";
                 }
 
                 if (opponentBoard.Grid[row, col] == Square.Ship)
@@ -186,8 +187,14 @@ namespace SharedLibrary
                     opponentBoard.Grid[row, col] = Square.Miss;
                     result = "miss";
                 }
-            
-            return result;
+            }
+            else
+            {
+                result = "miss";
+            }
+
+
+                return result;
         }
 
         public void PrintTeams()
@@ -205,6 +212,30 @@ namespace SharedLibrary
             }
         }
 
-        
+        public List<IShot> DefineShots()
+        {
+            var builder = new ShotBuilder();
+
+            return new List<IShot>
+    {
+        builder.SetName("Simple").SetSpread(new List<(int, int)> { (0, 0) }).Build(),
+        builder.SetName("Big").SetSpread(new List<(int, int)>
+        {
+            (0, 0), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)
+        }).Build(),
+        builder.SetName("Piercer").SetSpread(new List<(int, int)>
+        {
+            (0, 0), (1, 0), (2, 0), (3, 0)
+        }).Build(),
+        builder.SetName("Slasher").SetSpread(new List<(int, int)>
+        {
+            (0, 0), (0, 1), (0, 2), (0, 3)
+        }).Build(),
+        builder.SetName("Cross").SetSpread(new List<(int, int)>
+        {
+            (0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)
+        }).Build()
+    };
+        }
     }
 }
