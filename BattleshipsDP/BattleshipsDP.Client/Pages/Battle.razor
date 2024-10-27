@@ -20,6 +20,7 @@
         {
             <h2 style="color: blue;">Your turn!</h2>
         }
+        
     </div>
     <div style="display: flex; gap: 50px;">
         <!-- Team Board -->
@@ -126,18 +127,20 @@
                 InvokeAsync(StateHasChanged);
             });
 
+            PlayerState.HubConnection.On("NotYourTurn", () =>
+            {
+                isPlayerTurn = false;  
+                InvokeAsync(StateHasChanged);
+            });
+
             PlayerState.HubConnection.On("YourTurn", () =>
             {
-                isPlayerTurn = true;  // Rodome žinutę „Your turn“
+                isPlayerTurn = true;  
                 InvokeAsync(StateHasChanged);
             });
 
             // Kitas įvykis „NotYourTurn“
-            PlayerState.HubConnection.On("NotYourTurn", () =>
-            {
-                isPlayerTurn = false;  // Paslepiame „Your turn“ pranešimą
-                InvokeAsync(StateHasChanged);
-            });
+
 
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ // Receive board info from the server
             PlayerState.HubConnection.On<List<List<Square>>>("ReceiveBoardInfo", (receivedCells) =>
@@ -149,7 +152,6 @@
                         Row = receivedCells.IndexOf(row),
                         Col = row.IndexOf(cell)
                     }).ToList()).ToList();
-
                 InvokeAsync(StateHasChanged);
             });
 
@@ -190,10 +192,11 @@
                 await HandleGameOver(message);
             });
 
-            
+
 
             // Notify the server that this player is ready
             await PlayerState.HubConnection.SendAsync("PlayerReady");
+        
         }
     }
 
@@ -237,6 +240,7 @@
             if (PlayerState.HubConnection is not null)
             {
                 await PlayerState.HubConnection.SendAsync("ShootAtOpponent", selectedRow.Value, selectedCol.Value, selectedShot);
+                isPlayerTurn = false;
             }
         }
         else
