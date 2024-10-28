@@ -116,6 +116,9 @@
                 await PlayerState.HubConnection.StartAsync();
             }
 
+            // Notify the server that this player is ready
+            await PlayerState.HubConnection.SendAsync("PlayerReady");
+
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ // Receive player info from the server
             PlayerState.HubConnection.On<string, string, string>("ReceivePlayerInfo", (name, connectionId, team) =>
             {
@@ -124,7 +127,7 @@
                 PlayerTeam = team;
 
                 Console.WriteLine($"Received player info: Name={name}, ConnectionID={connectionId}, Team={team}");
-                InvokeAsync(StateHasChanged);
+                StateHasChanged();
             });
 
             PlayerState.HubConnection.On("YourTurn", () =>
@@ -189,12 +192,6 @@
             {
                 await HandleGameOver(message);
             });
-
-
-
-            // Notify the server that this player is ready
-            await PlayerState.HubConnection.SendAsync("PlayerReady");
-        
         }
     }
 

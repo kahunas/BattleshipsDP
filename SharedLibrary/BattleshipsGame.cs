@@ -136,6 +136,7 @@ namespace SharedLibrary
             NotifyTurnObservers();
         }
 
+        //~~~ Observer ~~~
         public void RegisterTurnObserver(ITurnObserver observer)
         {
             if (!turnObservers.Contains(observer))
@@ -159,15 +160,7 @@ namespace SharedLibrary
                 observer.UpdateTurn(CurrentPlayerId);
             }
         }
-
-        public void SetPlayerReady(string connectionId)
-        {
-            var player = ATeam.Players.Concat(BTeam.Players).FirstOrDefault(p => p.ConnectionId == connectionId);
-            if (player != null)
-            {
-                player.IsReady = true;
-            }
-        }
+        //~~~ Observer ~~~
 
         public string GetTeamByPlayer(string connectionId)
         {
@@ -178,8 +171,6 @@ namespace SharedLibrary
         {
             return GetTeamByPlayer(connectionId) == "Team A" ? ATeam.Players : BTeam.Players;
         }
-
-        
 
         public string ShootCell(int row, int col, string connectionId, out bool isGameOver)
         {
