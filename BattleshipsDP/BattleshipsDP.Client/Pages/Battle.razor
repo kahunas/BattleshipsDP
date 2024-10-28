@@ -20,6 +20,7 @@
         {
             <h2 style="color: blue;">Your turn!</h2>
         }
+        
     </div>
     <div style="display: flex; gap: 50px;">
         <!-- Team Board -->
@@ -126,30 +127,33 @@
                 InvokeAsync(StateHasChanged);
             });
 
-            PlayerState.HubConnection.On("YourTurn", () =>
+            PlayerState.HubConnection.On("NotYourTurn", () =>
             {
                 Console.WriteLine("It's my turn now!"); // Browser test
                 isPlayerTurn = true;  // Rodome žinutę „Your turn“
                 StateHasChanged();
             });
 
-            // Kitas įvykis „NotYourTurn“
-            PlayerState.HubConnection.On("NotYourTurn", () =>
+            PlayerState.HubConnection.On("YourTurn", () =>
             {
-                isPlayerTurn = false;  // Paslepiame „Your turn“ pranešimą
+                isPlayerTurn = true;  
                 InvokeAsync(StateHasChanged);
             });
 
+            // Kitas įvykis „NotYourTurn“
+
+
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ // Receive board info from the server
-            PlayerState.HubConnection.On<List<List<Square>>>("ReceiveBoardInfo", (serializableBoard) =>
+            PlayerState.HubConnection.On<List<List<Square>>>("ReceiveBoardInfo", (receivedCells) =>
             {
                 // Update TeamCells with the received board state
-                TeamCells = serializableBoard.Select(row => row.Select(cell => new GridCell
-                {
-                    State = cell,
-                    Row = serializableBoard.IndexOf(row),
-                    Col = row.IndexOf(cell)
-                }).ToList()).ToList();
+                TeamCells = receivedCells.Select(row => row.Select(cell => new GridCell
+                    {
+                        State = cell,
+                        Row = receivedCells.IndexOf(row),
+                        Col = row.IndexOf(cell)
+                    }).ToList()).ToList();
+
                 InvokeAsync(StateHasChanged);
             });
 
@@ -190,10 +194,11 @@
                 await HandleGameOver(message);
             });
 
-            
+
 
             // Notify the server that this player is ready
             await PlayerState.HubConnection.SendAsync("PlayerReady");
+        
         }
     }
 
@@ -237,6 +242,7 @@
             if (PlayerState.HubConnection is not null)
             {
                 await PlayerState.HubConnection.SendAsync("ShootAtOpponent", selectedRow.Value, selectedCol.Value, selectedShot);
+                isPlayerTurn = false;
             }
         }
         else
