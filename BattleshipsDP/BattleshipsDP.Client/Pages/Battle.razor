@@ -1,5 +1,5 @@
 ﻿@page "/battle"
-@using SharedLibrary
+
 @inject PlayerState PlayerState
 @inject NavigationManager Navigation
 @rendermode @(new InteractiveWebAssemblyRenderMode(false))
@@ -14,7 +14,7 @@
     <div>
         <h3>Player Information</h3>
         <p>Name: @PlayerName</p>
-        <p>Connection ID: @PlayerConnectionId</p>
+        <p>Connection ID: @PlayerState.HubConnection.ConnectionId</p>
         <p>Team: @PlayerTeam</p>
         @if (isPlayerTurn)
         {
@@ -81,7 +81,7 @@
 
 @code {
     private string PlayerName { get; set; } = string.Empty;
-    private string PlayerConnectionId { get; set; } = string.Empty;
+    //private string PlayerConnectionId { get; set; } = string.Empty;
     private string PlayerTeam { get; set; } = string.Empty;
     private string WinnerTeam { get; set; } = string.Empty;
     private int? selectedRow = null;
@@ -109,7 +109,7 @@
             EnemyCells.Add(enemyRow);
         }
 
-        if (PlayerState.HubConnection is not null)
+        if (IsHubConnectionActive())
         {
             if (PlayerState.HubConnection.State == HubConnectionState.Disconnected)
             {
@@ -120,7 +120,7 @@
             PlayerState.HubConnection.On<string, string, string>("ReceivePlayerInfo", (name, connectionId, team) =>
             {
                 PlayerName = name;
-                PlayerConnectionId = connectionId;
+                //PlayerConnectionId = connectionId;
                 PlayerTeam = team;
 
                 Console.WriteLine($"Received player info: Name={name}, ConnectionID={connectionId}, Team={team}");
@@ -225,7 +225,7 @@
         selectedCol = cell.Col;
 
         // Update the server so teammates are informed
-        if (PlayerState.HubConnection is not null)
+        if (IsHubConnectionActive())
         {
             await PlayerState.HubConnection.SendAsync("HighlightBlockForTeam", cell.Row, cell.Col);
         }
@@ -237,7 +237,7 @@
     {
         if (selectedRow.HasValue && selectedCol.HasValue && selectedShot != null)
         {
-            if (PlayerState.HubConnection is not null)
+            if (IsHubConnectionActive())
             {
                 await PlayerState.HubConnection.SendAsync("ShootAtOpponent", selectedRow.Value, selectedCol.Value, selectedShot);
                 isPlayerTurn = false;
@@ -285,4 +285,6 @@
 
         await InvokeAsync(StateHasChanged);
     }
+
+    private bool IsHubConnectionActive() => PlayerState.HubConnection is not null;
 }

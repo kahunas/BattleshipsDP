@@ -61,21 +61,45 @@ namespace SharedLibrary
             ATeamBoard = ATeam.Board;
             BTeamBoard = BTeam.Board;
 
+            // Define ships to be placed
+            IShipFactory blueShipFactory = new BlueShipFactory();
+            IShipFactory redShipFactory = new RedShipFactory();
+
+
+
+            List<(Ship, Square)> shipsToPlaceTeamA = new List<(Ship, Square)>
+            {
+                (blueShipFactory.CreateDestroyer("Destroyer"), Square.Ship),
+                (blueShipFactory.CreateSubmarine("Submarine"), Square.Ship),
+                (blueShipFactory.CreateSubmarine("Submarine"), Square.Ship),
+                (blueShipFactory.CreateBattleship("Battleship"), Square.Ship),
+                (blueShipFactory.CreateCarrier("Carrier"), Square.Ship)
+            };
+
+            List<(Ship, Square)> shipsToPlaceTeamB = new List<(Ship, Square)>
+            {
+                (redShipFactory.CreateDestroyer("Destroyer"), Square.Ship),
+                (redShipFactory.CreateSubmarine("Submarine"), Square.Ship),
+                (redShipFactory.CreateSubmarine("Submarine"), Square.Ship),
+                (redShipFactory.CreateBattleship("Battleship"), Square.Ship),
+                (redShipFactory.CreateCarrier("Carrier"), Square.Ship)
+            };
+
             // Randomly place ships for both teams
             ATeamBoard.RandomlyPlaceShips(shipsToPlace);
             BTeamBoard.RandomlyPlaceShips(shipsToPlace);
 
-            PrintTeams();
+            //PrintTeams();
 
             // Set the first player to start the game
             CurrentPlayerId = ATeamPlayer1Id;
-            Console.WriteLine($"First turn goes to Player 1 of Team A: {CurrentPlayerId}");
+            //Console.WriteLine($"First turn goes to Player 1 of Team A: {CurrentPlayerId}");
 
             // Debug: Print the boards after placing ships
-            Console.WriteLine("Team A Board:");
-            ATeamBoard.PrintBoard();  // Assuming there's a method to print the board state to the console
-            Console.WriteLine("Team B Board:");
-            BTeamBoard.PrintBoard();  // Assuming there's a method to print the board state to the console
+            //Console.WriteLine("Team A Board:");
+            //ATeamBoard.PrintBoard();  // Assuming there's a method to print the board state to the console
+            //Console.WriteLine("Team B Board:");
+            //BTeamBoard.PrintBoard();  // Assuming there's a method to print the board state to the console
         }
 
         public void DividePlayersIntoTeams(List<Player> players)
@@ -197,13 +221,13 @@ namespace SharedLibrary
                 return result;
         }
 
-        public void PrintTeams()
-        {
-            Console.WriteLine("Team A:");
-            foreach (var player in ATeam.Players)
-            {
-                Console.WriteLine($"Player ID: {player.ConnectionId}, Name: {player.Name}");
-            }
+        //public void PrintTeams()
+        //{
+        //    Console.WriteLine("Team A:");
+        //    foreach (var player in ATeam.Players)
+        //    {
+        //        Console.WriteLine($"Player ID: {player.ConnectionId}, Name: {player.Name}");
+        //    }
 
             Console.WriteLine("Team B:");
             foreach (var player in BTeam.Players)

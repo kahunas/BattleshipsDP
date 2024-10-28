@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SharedLibrary
 {
-    public class Ship
+    public abstract class Ship
     {
         public string Name { get; set; }
         public int Size { get; set; }
@@ -46,7 +46,7 @@ namespace SharedLibrary
                     Console.WriteLine($"Hit Coordinates: {string.Join(", ", HitCoordinates)}");
 
                     // Check if the ship is destroyed
-                    if (Health == 0)
+                    if (IsDestroyed())
                     {
                         Console.WriteLine($"Ship {Name} is destroyed!");
                     }
@@ -57,9 +57,6 @@ namespace SharedLibrary
 
             return false;
         }
-
-
-
         public bool IsDestroyed()
         {
             // A ship is destroyed if all its parts are hit
