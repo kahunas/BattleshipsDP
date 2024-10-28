@@ -14,13 +14,21 @@ namespace BattleshipsDP.Hubs
             _clients = clients;
         }
 
-        public async void UpdateTurn(string currentPlayer)
+        public async Task UpdateTurn(string currentPlayer)
         {
-            if (_connectionId == currentPlayer)
+            try
             {
-                await _clients.Client(_connectionId).SendAsync("YourTurn");
+                if (_connectionId == currentPlayer)
+                {
+                    await _clients.Client(_connectionId).SendAsync("YourTurn");
+                }
+                Console.WriteLine($"Notifying {_connectionId} of their turn."); // Test
             }
-            Console.WriteLine($"Notifying {_connectionId} of their turn."); // Test
+            catch (Exception ex)
+            {
+                // Log the exception (consider using a logging framework)
+                Console.WriteLine($"Error notifying {_connectionId}: {ex.Message}");
+            }
         }
     }
 }

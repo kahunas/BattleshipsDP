@@ -179,7 +179,6 @@ namespace BattleshipsDP.Hubs
             if (!isGameOver)
             {
                 room.Game.UpdateTurn();
-                await Clients.Client(room.Game.CurrentPlayerId).SendAsync("YourTurn");
             }
         }
 

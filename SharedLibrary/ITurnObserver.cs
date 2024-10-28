@@ -8,6 +8,6 @@ namespace SharedLibrary
 {
     public interface ITurnObserver
     {
-        void UpdateTurn(string currentPlayer);
+        Task UpdateTurn(string currentPlayer);
     }
 }
