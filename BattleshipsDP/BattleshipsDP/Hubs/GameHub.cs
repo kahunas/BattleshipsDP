@@ -91,7 +91,6 @@ namespace BattleshipsDP.Hubs
             await Clients.Client(connectionId).SendAsync("ReceiveBoardState", serializableBoard);
         }
 
-
         public async Task PlayerReady()
         {
             var connectionId = Context.ConnectionId;
@@ -103,6 +102,9 @@ namespace BattleshipsDP.Hubs
             if (player == null) return;
 
             room.Game.SetPlayerReady(connectionId);
+
+            // Register player as a turn observer
+            room.Game.RegisterTurnObserver(new TurnObserver(player.ConnectionId, Clients));
 
             var team = room.Game.GetTeamByPlayer(connectionId);
             var board = team == "Team A" ? room.Game.ATeam.Board : room.Game.BTeam.Board;
@@ -128,8 +130,6 @@ namespace BattleshipsDP.Hubs
                 await Clients.Client(teammate.ConnectionId).SendAsync("ReceiveBlockHighlight", row, col);
             }
         }
-
-        
 
         public async Task ShootAtOpponent(int row, int col, string type)
         {
@@ -178,7 +178,7 @@ namespace BattleshipsDP.Hubs
 
             if (!isGameOver)
             {
-                room.Game.SwitchToNextPlayer();
+                room.Game.UpdateTurn();
                 await Clients.Client(room.Game.CurrentPlayerId).SendAsync("YourTurn");
             }
         }

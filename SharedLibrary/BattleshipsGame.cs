@@ -27,6 +27,8 @@ namespace SharedLibrary
         public bool GameOver { get; set; } = false;
         public int boardSize = 10;
 
+        private List<ITurnObserver> turnObservers = new List<ITurnObserver>();
+
         List<(Ship, Square)> shipsToPlace = new List<(Ship, Square)>
             {
                 (new Ship("Destroyer", 2), Square.Ship),
@@ -36,8 +38,6 @@ namespace SharedLibrary
                 (new Ship("Carrier", 5), Square.Ship)
             };
         
-
-
         public BattleshipsGame()
         {
             ATeamPlayer1Id = string.Empty;
@@ -46,11 +46,14 @@ namespace SharedLibrary
             BTeamPlayer2Id = string.Empty;
             CurrentPlayerId = string.Empty;
         }
+
         public void StartGame()
         {
             Console.WriteLine("Game started");
+
             GameStarted = true;
             GameOver = false;
+
             DividePlayersIntoTeams(new List<Player>
             {
                 new Player(ATeamPlayer1Id, "Player 1"),
@@ -58,6 +61,7 @@ namespace SharedLibrary
                 new Player(BTeamPlayer1Id, "Player 3"),
                 new Player(BTeamPlayer2Id, "Player 4")
             });
+
             ATeamBoard = ATeam.Board;
             BTeamBoard = BTeam.Board;
 
@@ -73,9 +77,12 @@ namespace SharedLibrary
 
             // Debug: Print the boards after placing ships
             Console.WriteLine("Team A Board:");
-            ATeamBoard.PrintBoard();  // Assuming there's a method to print the board state to the console
+            ATeamBoard.PrintBoard();
             Console.WriteLine("Team B Board:");
-            BTeamBoard.PrintBoard();  // Assuming there's a method to print the board state to the console
+            BTeamBoard.PrintBoard();
+
+            // Notify observers about the first turn
+            NotifyTurnObservers();
         }
 
         public void DividePlayersIntoTeams(List<Player> players)
@@ -102,7 +109,7 @@ namespace SharedLibrary
             BTeamPlayer2Id = players[3].ConnectionId;
         }
 
-        public void SwitchToNextPlayer()
+        public void UpdateTurn()
         {
             // Determine the current player and switch to the next one
             if (CurrentPlayerId == ATeamPlayer1Id)
@@ -123,6 +130,34 @@ namespace SharedLibrary
             }
 
             Console.WriteLine($"It is now {CurrentPlayerId}'s turn.");
+
+
+            // Notify all observers that the turn has changed
+            NotifyTurnObservers();
+        }
+
+        public void RegisterTurnObserver(ITurnObserver observer)
+        {
+            if (!turnObservers.Contains(observer))
+            {
+                turnObservers.Add(observer);
+            }
+        }
+
+        public void UnregisterTurnObserver(ITurnObserver observer)
+        {
+            if (turnObservers.Contains(observer))
+            {
+                turnObservers.Remove(observer);
+            }
+        }
+
+        private void NotifyTurnObservers()
+        {
+            foreach (var observer in turnObservers)
+            {
+                observer.UpdateTurn(CurrentPlayerId);
+            }
         }
 
         public void SetPlayerReady(string connectionId)

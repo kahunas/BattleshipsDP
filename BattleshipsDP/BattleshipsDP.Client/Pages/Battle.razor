@@ -89,8 +89,8 @@
     private bool isPlayerTurn = false;
     private string gameOverMessage = string.Empty;
 
-    private List<List<GridCell>> TeamCells = new();
-    private List<List<GridCell>> EnemyCells = new();
+    private List<List<GridCell>> TeamCells = new List<List<GridCell>>();
+    private List<List<GridCell>> EnemyCells = new List<List<GridCell>>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -128,8 +128,9 @@
 
             PlayerState.HubConnection.On("YourTurn", () =>
             {
+                Console.WriteLine("It's my turn now!"); // Browser test
                 isPlayerTurn = true;  // Rodome žinutę „Your turn“
-                InvokeAsync(StateHasChanged);
+                StateHasChanged();
             });
 
             // Kitas įvykis „NotYourTurn“
@@ -140,16 +141,15 @@
             });
 
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ // Receive board info from the server
-            PlayerState.HubConnection.On<List<List<Square>>>("ReceiveBoardInfo", (receivedCells) =>
+            PlayerState.HubConnection.On<List<List<Square>>>("ReceiveBoardInfo", (serializableBoard) =>
             {
                 // Update TeamCells with the received board state
-                TeamCells = receivedCells.Select(row => row.Select(cell => new GridCell
-                    {
-                        State = cell,
-                        Row = receivedCells.IndexOf(row),
-                        Col = row.IndexOf(cell)
-                    }).ToList()).ToList();
-
+                TeamCells = serializableBoard.Select(row => row.Select(cell => new GridCell
+                {
+                    State = cell,
+                    Row = serializableBoard.IndexOf(row),
+                    Col = row.IndexOf(cell)
+                }).ToList()).ToList();
                 InvokeAsync(StateHasChanged);
             });
 
