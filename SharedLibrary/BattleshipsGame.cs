@@ -29,14 +29,14 @@ namespace SharedLibrary
 
         private List<ITurnObserver> turnObservers = new List<ITurnObserver>();
 
-        List<(Ship, Square)> shipsToPlace = new List<(Ship, Square)>
-            {
-                (new Ship("Destroyer", 2), Square.Ship),
-                (new Ship("Submarine", 3), Square.Ship),
-                (new Ship("Cruiser", 3), Square.Ship),
-                (new Ship("Battleship", 4), Square.Ship),
-                (new Ship("Carrier", 5), Square.Ship)
-            };
+        //List<(Ship, Square)> shipsToPlace = new List<(Ship, Square)>
+        //    {
+        //        (new Ship("Destroyer", 2), Square.Ship),
+        //        (new Ship("Submarine", 3), Square.Ship),
+        //        (new Ship("Cruiser", 3), Square.Ship),
+        //        (new Ship("Battleship", 4), Square.Ship),
+        //        (new Ship("Carrier", 5), Square.Ship)
+        //    };
         
         public BattleshipsGame()
         {
@@ -95,8 +95,8 @@ namespace SharedLibrary
             };
 
             // Randomly place ships for both teams
-            ATeamBoard.RandomlyPlaceShips(shipsToPlace);
-            BTeamBoard.RandomlyPlaceShips(shipsToPlace);
+            ATeamBoard.RandomlyPlaceShips(shipsToPlaceTeamA);
+            BTeamBoard.RandomlyPlaceShips(shipsToPlaceTeamB);
 
             //PrintTeams();
 
@@ -106,10 +106,10 @@ namespace SharedLibrary
             //Console.WriteLine($"First turn goes to Player 1 of Team A: {CurrentPlayerId}");
 
             // Debug: Print the boards after placing ships
-            Console.WriteLine("Team A Board:");
-            ATeamBoard.PrintBoard();
-            Console.WriteLine("Team B Board:");
-            BTeamBoard.PrintBoard();
+            //Console.WriteLine("Team A Board:");
+            //ATeamBoard.PrintBoard();
+            //Console.WriteLine("Team B Board:");
+            //BTeamBoard.PrintBoard();
 
             // Notify observers about the first turn
             NotifyTurnObservers();
