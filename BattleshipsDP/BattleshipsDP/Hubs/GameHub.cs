@@ -91,21 +91,24 @@ namespace BattleshipsDP.Hubs
             await Clients.Client(connectionId).SendAsync("ReceiveBoardState", serializableBoard);
         }
 
-
         public async Task PlayerReady()
         {
+            Console.WriteLine("Player is ready.");
             var connectionId = Context.ConnectionId;
             var room = _gameService.GetRoomByPlayerId(connectionId);
 
             if (room == null) return;
 
+            var game = room.Game;
+
             var player = room.Players.FirstOrDefault(p => p.ConnectionId == connectionId);
             if (player == null) return;
 
-            room.Game.SetPlayerReady(connectionId);
+            // Register player as a turn observer
+            game.RegisterTurnObserver(new TurnObserver(player.ConnectionId, Clients));
 
-            var team = room.Game.GetTeamByPlayer(connectionId);
-            var board = team == "Team A" ? room.Game.ATeam.Board : room.Game.BTeam.Board;
+            var team = game.GetTeamByPlayer(connectionId);
+            var board = team == "Team A" ? game.ATeam.Board : game.BTeam.Board;
 
             // Use the player object to send the name and other info to the client
             await Clients.Client(connectionId).SendAsync("ReceivePlayerInfo", player.Name, connectionId, team);
@@ -128,8 +131,6 @@ namespace BattleshipsDP.Hubs
                 await Clients.Client(teammate.ConnectionId).SendAsync("ReceiveBlockHighlight", row, col);
             }
         }
-
-        
 
         public async Task ShootAtOpponent(int row, int col, string type)
         {
@@ -178,8 +179,7 @@ namespace BattleshipsDP.Hubs
 
             if (!isGameOver)
             {
-                room.Game.SwitchToNextPlayer();
-                await Clients.Client(room.Game.CurrentPlayerId).SendAsync("YourTurn");
+                room.Game.UpdateTurn();
             }
         }
 

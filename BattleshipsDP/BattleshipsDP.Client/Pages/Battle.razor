@@ -20,7 +20,7 @@
         {
             <h2 style="color: blue;">Your turn!</h2>
         }
-        
+      
     </div>
     <div style="display: flex; gap: 50px;">
         <!-- Team Board -->
@@ -90,8 +90,8 @@
     private bool isPlayerTurn = false;
     private string gameOverMessage = string.Empty;
 
-    private List<List<GridCell>> TeamCells = new();
-    private List<List<GridCell>> EnemyCells = new();
+    private List<List<GridCell>> TeamCells = new List<List<GridCell>>();
+    private List<List<GridCell>> EnemyCells = new List<List<GridCell>>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -116,6 +116,9 @@
                 await PlayerState.HubConnection.StartAsync();
             }
 
+            // Notify the server that this player is ready
+            await PlayerState.HubConnection.SendAsync("PlayerReady");
+
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ // Receive player info from the server
             PlayerState.HubConnection.On<string, string, string>("ReceivePlayerInfo", (name, connectionId, team) =>
             {
@@ -124,7 +127,14 @@
                 PlayerTeam = team;
 
                 Console.WriteLine($"Received player info: Name={name}, ConnectionID={connectionId}, Team={team}");
-                InvokeAsync(StateHasChanged);
+                StateHasChanged();
+            });
+
+            PlayerState.HubConnection.On("YourTurn", () =>
+            {
+                Console.WriteLine("It's my turn now!"); // Browser test
+                isPlayerTurn = true;  // Rodome žinutę „Your turn“
+                StateHasChanged();
             });
 
             PlayerState.HubConnection.On("NotYourTurn", () =>
@@ -132,15 +142,6 @@
                 isPlayerTurn = false;  
                 InvokeAsync(StateHasChanged);
             });
-
-            PlayerState.HubConnection.On("YourTurn", () =>
-            {
-                isPlayerTurn = true;  
-                InvokeAsync(StateHasChanged);
-            });
-
-            // Kitas įvykis „NotYourTurn“
-
 
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ // Receive board info from the server
             PlayerState.HubConnection.On<List<List<Square>>>("ReceiveBoardInfo", (receivedCells) =>
@@ -191,12 +192,6 @@
             {
                 await HandleGameOver(message);
             });
-
-
-
-            // Notify the server that this player is ready
-            await PlayerState.HubConnection.SendAsync("PlayerReady");
-        
         }
     }
 

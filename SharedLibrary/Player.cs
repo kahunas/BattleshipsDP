@@ -10,13 +10,11 @@ namespace SharedLibrary
     {
         public string ConnectionId { get; set; }
         public string Name { get; set; }
-        public bool IsReady { get; set; }
 
         public Player(string connectionId, string name)
         {
             ConnectionId = connectionId;
             Name = name;
-            IsReady = false;
         }
 
         public object Clone()

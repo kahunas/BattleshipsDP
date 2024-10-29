@@ -27,6 +27,8 @@ namespace SharedLibrary
         public bool GameOver { get; set; } = false;
         public int boardSize = 10;
 
+        private List<ITurnObserver> turnObservers = new List<ITurnObserver>();
+
         List<(Ship, Square)> shipsToPlace = new List<(Ship, Square)>
             {
                 (new Ship("Destroyer", 2), Square.Ship),
@@ -36,8 +38,6 @@ namespace SharedLibrary
                 (new Ship("Carrier", 5), Square.Ship)
             };
         
-
-
         public BattleshipsGame()
         {
             ATeamPlayer1Id = string.Empty;
@@ -46,9 +46,11 @@ namespace SharedLibrary
             BTeamPlayer2Id = string.Empty;
             CurrentPlayerId = string.Empty;
         }
+
         public void StartGame()
         {
             Console.WriteLine("Game started");
+
             GameStarted = true;
             GameOver = false;
 
@@ -104,10 +106,13 @@ namespace SharedLibrary
             //Console.WriteLine($"First turn goes to Player 1 of Team A: {CurrentPlayerId}");
 
             // Debug: Print the boards after placing ships
-            //Console.WriteLine("Team A Board:");
-            //ATeamBoard.PrintBoard();  // Assuming there's a method to print the board state to the console
-            //Console.WriteLine("Team B Board:");
-            //BTeamBoard.PrintBoard();  // Assuming there's a method to print the board state to the console
+            Console.WriteLine("Team A Board:");
+            ATeamBoard.PrintBoard();
+            Console.WriteLine("Team B Board:");
+            BTeamBoard.PrintBoard();
+
+            // Notify observers about the first turn
+            NotifyTurnObservers();
         }
 
         public void DividePlayersIntoTeams(List<Player> players)
@@ -134,7 +139,7 @@ namespace SharedLibrary
             BTeamPlayer2Id = players[3].ConnectionId;
         }
 
-        public void SwitchToNextPlayer()
+        public void UpdateTurn()
         {
             // Determine the current player and switch to the next one
             if (CurrentPlayerId == ATeamPlayer1Id)
@@ -155,16 +160,37 @@ namespace SharedLibrary
             }
 
             Console.WriteLine($"It is now {CurrentPlayerId}'s turn.");
+
+
+            // Notify all observers that the turn has changed
+            NotifyTurnObservers();
         }
 
-        public void SetPlayerReady(string connectionId)
+        //~~~ Observer ~~~
+        public void RegisterTurnObserver(ITurnObserver observer)
         {
-            var player = ATeam.Players.Concat(BTeam.Players).FirstOrDefault(p => p.ConnectionId == connectionId);
-            if (player != null)
+            if (!turnObservers.Contains(observer))
             {
-                player.IsReady = true;
+                turnObservers.Add(observer);
             }
         }
+
+        public void UnregisterTurnObserver(ITurnObserver observer)
+        {
+            if (turnObservers.Contains(observer))
+            {
+                turnObservers.Remove(observer);
+            }
+        }
+
+        private void NotifyTurnObservers()
+        {
+            foreach (var observer in turnObservers)
+            {
+                observer.UpdateTurn(CurrentPlayerId);
+            }
+        }
+        //~~~ Observer ~~~
 
         public string GetTeamByPlayer(string connectionId)
         {
@@ -175,8 +201,6 @@ namespace SharedLibrary
         {
             return GetTeamByPlayer(connectionId) == "Team A" ? ATeam.Players : BTeam.Players;
         }
-
-        
 
         public string ShootCell(int row, int col, string connectionId, out bool isGameOver)
         {
@@ -229,13 +253,13 @@ namespace SharedLibrary
                 return result;
         }
 
-        //public void PrintTeams()
-        //{
-        //    Console.WriteLine("Team A:");
-        //    foreach (var player in ATeam.Players)
-        //    {
-        //        Console.WriteLine($"Player ID: {player.ConnectionId}, Name: {player.Name}");
-        //    }
+        public void PrintTeams()
+        {
+            Console.WriteLine("Team A:");
+            foreach (var player in ATeam.Players)
+            {
+                Console.WriteLine($"Player ID: {player.ConnectionId}, Name: {player.Name}");
+            }
 
             Console.WriteLine("Team B:");
             foreach (var player in BTeam.Players)
