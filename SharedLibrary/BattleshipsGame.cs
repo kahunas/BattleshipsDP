@@ -51,21 +51,28 @@ namespace SharedLibrary
             Console.WriteLine("Game started");
             GameStarted = true;
             GameOver = false;
+
+            //define player prototypes
+            var prototypePlayerA1 = new Player(ATeamPlayer1Id, "Player 1");
+            var prototypePlayerA2 = new Player(ATeamPlayer2Id, "Player 2");
+            var prototypePlayerB1 = new Player(BTeamPlayer1Id, "Player 3");
+            var prototypePlayerB2 = new Player(BTeamPlayer2Id, "Player 4");
+
+            // Clone and modify prototypes to create new player instances
             DividePlayersIntoTeams(new List<Player>
             {
-                new Player(ATeamPlayer1Id, "Player 1"),
-                new Player(ATeamPlayer2Id, "Player 2"),
-                new Player(BTeamPlayer1Id, "Player 3"),
-                new Player(BTeamPlayer2Id, "Player 4")
+                (Player)prototypePlayerA1.Clone(),
+                (Player)prototypePlayerA2.Clone(),
+                (Player)prototypePlayerB1.Clone(),
+                (Player)prototypePlayerB2.Clone()
             });
+
             ATeamBoard = ATeam.Board;
             BTeamBoard = BTeam.Board;
 
             // Define ships to be placed
             IShipFactory blueShipFactory = new BlueShipFactory();
             IShipFactory redShipFactory = new RedShipFactory();
-
-
 
             List<(Ship, Square)> shipsToPlaceTeamA = new List<(Ship, Square)>
             {
@@ -93,6 +100,7 @@ namespace SharedLibrary
 
             // Set the first player to start the game
             CurrentPlayerId = ATeamPlayer1Id;
+
             //Console.WriteLine($"First turn goes to Player 1 of Team A: {CurrentPlayerId}");
 
             // Debug: Print the boards after placing ships

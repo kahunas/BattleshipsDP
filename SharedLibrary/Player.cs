@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SharedLibrary
 {
-    public class Player
+    public class Player : ICloneable
     {
         public string ConnectionId { get; set; }
         public string Name { get; set; }
@@ -17,6 +17,12 @@ namespace SharedLibrary
             ConnectionId = connectionId;
             Name = name;
             IsReady = false;
+        }
+
+        public object Clone()
+        {
+            // Return a new Player instance with the same values
+            return new Player(this.ConnectionId, this.Name) { IsReady = this.IsReady };
         }
 
     }
