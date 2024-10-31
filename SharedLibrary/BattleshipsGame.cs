@@ -67,8 +67,10 @@ namespace SharedLibrary
 
             //define player prototypes
             var prototypePlayerA1 = new Player(ATeamPlayer1Id, "Player 1");
+            prototypePlayerA1.IsTeamLeader = true;
             var prototypePlayerA2 = new Player(ATeamPlayer2Id, "Player 2");
             var prototypePlayerB1 = new Player(BTeamPlayer1Id, "Player 3");
+            prototypePlayerB1.IsTeamLeader = true;
             var prototypePlayerB2 = new Player(BTeamPlayer2Id, "Player 4");
 
             // Clone and modify prototypes to create new player instances
@@ -133,10 +135,7 @@ namespace SharedLibrary
                 throw new ArgumentException("Not enough players to form two teams.");
             }
 
-            // Set team leaders (first player of each team)
-            players[0].IsTeamLeader = true;
-            players[2].IsTeamLeader = true;
-
+            // Remove the manual team leader setting here since it's already set in the prototypes
             ATeam = new Team("Team A")
             {
                 Players = new List<Player> { players[0], players[1] },
