@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SharedLibrary.Strategies;
 
 namespace SharedLibrary
 {
@@ -28,6 +29,9 @@ namespace SharedLibrary
         public int boardSize = 10;
 
         private List<ITurnObserver> turnObservers = new List<ITurnObserver>();
+        private Dictionary<string, IShipPlacementStrategy> placementStrategies;
+        private string teamAStrategy = "Random";
+        private string teamBStrategy = "Random";
 
         //List<(Ship, Square)> shipsToPlace = new List<(Ship, Square)>
         //    {
@@ -45,6 +49,13 @@ namespace SharedLibrary
             BTeamPlayer1Id = string.Empty;
             BTeamPlayer2Id = string.Empty;
             CurrentPlayerId = string.Empty;
+
+            placementStrategies = new Dictionary<string, IShipPlacementStrategy>
+            {
+                { "Random", new RandomPlacementStrategy() },
+                { "Edge", new EdgePlacementStrategy() },
+                { "Spaced", new SpacedPlacementStrategy() }
+            };
         }
 
         public void StartGame()
@@ -94,9 +105,9 @@ namespace SharedLibrary
                 (redShipFactory.CreateCarrier("Carrier"), Square.Ship)
             };
 
-            // Randomly place ships for both teams
-            ATeamBoard.RandomlyPlaceShips(shipsToPlaceTeamA);
-            BTeamBoard.RandomlyPlaceShips(shipsToPlaceTeamB);
+            // Use the selected strategies for each team
+            placementStrategies[teamAStrategy].PlaceShips(ATeamBoard, shipsToPlaceTeamA);
+            placementStrategies[teamBStrategy].PlaceShips(BTeamBoard, shipsToPlaceTeamB);
 
             //PrintTeams();
 
@@ -121,6 +132,10 @@ namespace SharedLibrary
             {
                 throw new ArgumentException("Not enough players to form two teams.");
             }
+
+            // Set team leaders (first player of each team)
+            players[0].IsTeamLeader = true;
+            players[2].IsTeamLeader = true;
 
             ATeam = new Team("Team A")
             {
@@ -292,6 +307,18 @@ namespace SharedLibrary
             (0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)
         }).Build()
     };
+        }
+
+        // Add new method to set team strategy
+        public void SetTeamStrategy(string team, string strategy)
+        {
+            if (placementStrategies.ContainsKey(strategy))
+            {
+                if (team == "Team A")
+                    teamAStrategy = strategy;
+                else if (team == "Team B")
+                    teamBStrategy = strategy;
+            }
         }
     }
 }

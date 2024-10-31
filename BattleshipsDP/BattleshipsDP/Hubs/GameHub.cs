@@ -68,7 +68,12 @@ namespace BattleshipsDP.Hubs
                 foreach (var player in room.Players)
                 {
                     var team = room.Game.GetTeamByPlayer(player.ConnectionId);
-                    await Clients.Client(player.ConnectionId).SendAsync("ReceivePlayerInfo", player.Name, player.ConnectionId, team);
+                    await Clients.Client(player.ConnectionId).SendAsync(
+                        "ReceivePlayerInfo", 
+                        player.Name, 
+                        player.ConnectionId, 
+                        team,
+                        player.IsTeamLeader);
                 }
             }
         }
@@ -110,12 +115,25 @@ namespace BattleshipsDP.Hubs
             var team = game.GetTeamByPlayer(connectionId);
             var board = team == "Team A" ? game.ATeam.Board : game.BTeam.Board;
 
-            // Use the player object to send the name and other info to the client
-            await Clients.Client(connectionId).SendAsync("ReceivePlayerInfo", player.Name, connectionId, team);
+            // Check if player is team leader (for both teams)
+            bool isTeamLeader = false;
+            if (team == "Team A" && game.ATeamPlayer1Id == connectionId)
+            {
+                isTeamLeader = true;
+            }
+            else if (team == "Team B" && game.BTeamPlayer1Id == connectionId)
+            {
+                isTeamLeader = true;
+            }
 
-            // Convert the board to a serializable format and send it
-            var serializableBoard = board.GetSerializableGrid();
-            await Clients.Client(connectionId).SendAsync("ReceiveBoardInfo", serializableBoard);
+            // Send player info including team leader status
+            await Clients.Client(connectionId).SendAsync(
+                "ReceivePlayerInfo", 
+                player.Name, 
+                connectionId, 
+                team,
+                isTeamLeader);
+
         }
 
         public async Task HighlightBlockForTeam(int row, int col)
@@ -198,6 +216,56 @@ namespace BattleshipsDP.Hubs
             foreach (var opponentTeammate in opponentTeammates)
             {
                 await Clients.Client(opponentTeammate.ConnectionId).SendAsync("ReceiveTeamHitResult", hit.Item1, hit.Item2, result);
+            }
+        }
+
+        public async Task ConfirmTeamStrategy(string strategy)
+        {
+            var connectionId = Context.ConnectionId;
+            var room = _gameService.GetRoomByPlayerId(connectionId);
+            if (room == null) return;
+
+            var team = room.Game.GetTeamByPlayer(connectionId);
+            
+            // Set the strategy for the team
+            room.Game.SetTeamStrategy(team, strategy);
+
+            var teammates = room.Game.GetTeammates(connectionId);
+            
+            // Notify teammates about the selected strategy
+            foreach (var teammate in teammates)
+            {
+                await Clients.Client(teammate.ConnectionId).SendAsync("ReceiveTeamStrategy", strategy);
+            }
+        }
+
+        public async Task PlayerReadyForBattle()
+        {
+            var connectionId = Context.ConnectionId;
+            var room = _gameService.GetRoomByPlayerId(connectionId);
+            if (room == null) return;
+
+            var player = room.Players.FirstOrDefault(p => p.ConnectionId == connectionId);
+            if (player != null)
+            {
+                player.IsReadyForBattle = true;
+
+                // Check if all players are ready
+                if (room.Players.All(p => p.IsReadyForBattle))
+                {
+                    // Start the game and place ships
+                    room.Game.StartGame();
+
+                    // Send initial board states to all players
+                    foreach (var p in room.Players)
+                    {
+                        var team = room.Game.GetTeamByPlayer(p.ConnectionId);
+                        var board = team == "Team A" ? room.Game.ATeamBoard : room.Game.BTeamBoard;
+                        await Clients.Client(p.ConnectionId).SendAsync("ReceiveBoardInfo", board.GetSerializableGrid());
+                    }
+
+                    await Clients.Group(room.RoomId).SendAsync("StartBattle");
+                }
             }
         }
     }
