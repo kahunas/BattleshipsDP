@@ -52,6 +52,17 @@
             <button @onclick="ShootAtOpponentBoard">Fire</button>
         </div>
         
+        @if (isTeamLeader)
+        {
+            <div>
+                <label for="selectedStrategy">Team Strategy:</label>
+                <select @bind="selectedStrategy" id="selectedStrategy" name="selectedStrategy">
+                    <option value="Defensive">Defensive</option>
+                    <option value="Aggressive">Aggressive</option>
+                    <option value="Balanced">Balanced</option>
+                </select>
+            </div>
+        }
 
         <!-- Enemy Board -->
         <div>
@@ -89,6 +100,8 @@
     private string selectedShot = "Simple";
     private bool isPlayerTurn = false;
     private string gameOverMessage = string.Empty;
+    private bool isTeamLeader = false;
+    private string selectedStrategy = "Defensive";
 
     private List<List<GridCell>> TeamCells = new List<List<GridCell>>();
     private List<List<GridCell>> EnemyCells = new List<List<GridCell>>();
@@ -120,13 +133,14 @@
             await PlayerState.HubConnection.SendAsync("PlayerReady");
 
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ // Receive player info from the server
-            PlayerState.HubConnection.On<string, string, string>("ReceivePlayerInfo", (name, connectionId, team) =>
+            PlayerState.HubConnection.On<string, string, string, bool>("ReceivePlayerInfo", (name, connectionId, team, isLeader) =>
             {
                 PlayerName = name;
                 //PlayerConnectionId = connectionId;
                 PlayerTeam = team;
+                isTeamLeader = isLeader;
 
-                Console.WriteLine($"Received player info: Name={name}, ConnectionID={connectionId}, Team={team}");
+                Console.WriteLine($"Received player info: Name={name}, ConnectionID={connectionId}, Team={team}, IsLeader={isLeader}");
                 StateHasChanged();
             });
 

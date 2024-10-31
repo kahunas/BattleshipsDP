@@ -122,6 +122,10 @@ namespace SharedLibrary
                 throw new ArgumentException("Not enough players to form two teams.");
             }
 
+            // Set team leaders (first player of each team)
+            players[0].IsTeamLeader = true;
+            players[2].IsTeamLeader = true;
+
             ATeam = new Team("Team A")
             {
                 Players = new List<Player> { players[0], players[1] },
