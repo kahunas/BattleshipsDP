@@ -134,7 +134,6 @@ namespace BattleshipsDP.Hubs
                 team,
                 isTeamLeader);
 
-            // Don't send board info yet, wait for battle to start
         }
 
         public async Task HighlightBlockForTeam(int row, int col)
