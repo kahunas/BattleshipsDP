@@ -69,9 +69,9 @@ namespace BattleshipsDP.Hubs
                 {
                     var team = room.Game.GetTeamByPlayer(player.ConnectionId);
                     await Clients.Client(player.ConnectionId).SendAsync(
-                        "ReceivePlayerInfo", 
-                        player.Name, 
-                        player.ConnectionId, 
+                        "ReceivePlayerInfo",
+                        player.Name,
+                        player.ConnectionId,
                         team,
                         player.IsTeamLeader);
                 }
@@ -105,7 +105,6 @@ namespace BattleshipsDP.Hubs
             if (room == null) return;
 
             var game = room.Game;
-
             var player = room.Players.FirstOrDefault(p => p.ConnectionId == connectionId);
             if (player == null) return;
 
@@ -113,27 +112,21 @@ namespace BattleshipsDP.Hubs
             game.RegisterTurnObserver(new TurnObserver(player.ConnectionId, Clients));
 
             var team = game.GetTeamByPlayer(connectionId);
-            var board = team == "Team A" ? game.ATeam.Board : game.BTeam.Board;
 
-            // Check if player is team leader (for both teams)
-            bool isTeamLeader = false;
-            if (team == "Team A" && game.ATeamPlayer1Id == connectionId)
-            {
-                isTeamLeader = true;
-            }
-            else if (team == "Team B" && game.BTeamPlayer1Id == connectionId)
-            {
-                isTeamLeader = true;
-            }
+            // Determine team leader status based on the connection ID matching the team's first player
+            bool isTeamLeader = (team == "Team A" && connectionId == game.ATeamPlayer1Id) ||
+                               (team == "Team B" && connectionId == game.BTeamPlayer1Id);
+
+            // Update the player's team leader status
+            player.IsTeamLeader = isTeamLeader;
 
             // Send player info including team leader status
             await Clients.Client(connectionId).SendAsync(
-                "ReceivePlayerInfo", 
-                player.Name, 
-                connectionId, 
+                "ReceivePlayerInfo",
+                player.Name,
+                connectionId,
                 team,
                 isTeamLeader);
-
         }
 
         public async Task HighlightBlockForTeam(int row, int col)
@@ -152,7 +145,7 @@ namespace BattleshipsDP.Hubs
 
         public async Task ShootAtOpponent(int row, int col, string type)
         {
-            
+
             var connectionId = Context.ConnectionId;
             var room = _gameService.GetRoomByPlayerId(connectionId);
             var shots = room.Game.DefineShots();
@@ -226,12 +219,12 @@ namespace BattleshipsDP.Hubs
             if (room == null) return;
 
             var team = room.Game.GetTeamByPlayer(connectionId);
-            
+
             // Set the strategy for the team
             room.Game.SetTeamStrategy(team, strategy);
 
             var teammates = room.Game.GetTeammates(connectionId);
-            
+
             // Notify teammates about the selected strategy
             foreach (var teammate in teammates)
             {
