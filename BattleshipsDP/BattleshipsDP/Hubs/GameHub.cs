@@ -134,9 +134,7 @@ namespace BattleshipsDP.Hubs
                 team,
                 isTeamLeader);
 
-            // Convert the board to a serializable format and send it
-            var serializableBoard = board.GetSerializableGrid();
-            await Clients.Client(connectionId).SendAsync("ReceiveBoardInfo", serializableBoard);
+            // Don't send board info yet, wait for battle to start
         }
 
         public async Task HighlightBlockForTeam(int row, int col)
@@ -219,6 +217,56 @@ namespace BattleshipsDP.Hubs
             foreach (var opponentTeammate in opponentTeammates)
             {
                 await Clients.Client(opponentTeammate.ConnectionId).SendAsync("ReceiveTeamHitResult", hit.Item1, hit.Item2, result);
+            }
+        }
+
+        public async Task ConfirmTeamStrategy(string strategy)
+        {
+            var connectionId = Context.ConnectionId;
+            var room = _gameService.GetRoomByPlayerId(connectionId);
+            if (room == null) return;
+
+            var team = room.Game.GetTeamByPlayer(connectionId);
+            
+            // Set the strategy for the team
+            room.Game.SetTeamStrategy(team, strategy);
+
+            var teammates = room.Game.GetTeammates(connectionId);
+            
+            // Notify teammates about the selected strategy
+            foreach (var teammate in teammates)
+            {
+                await Clients.Client(teammate.ConnectionId).SendAsync("ReceiveTeamStrategy", strategy);
+            }
+        }
+
+        public async Task PlayerReadyForBattle()
+        {
+            var connectionId = Context.ConnectionId;
+            var room = _gameService.GetRoomByPlayerId(connectionId);
+            if (room == null) return;
+
+            var player = room.Players.FirstOrDefault(p => p.ConnectionId == connectionId);
+            if (player != null)
+            {
+                player.IsReadyForBattle = true;
+
+                // Check if all players are ready
+                if (room.Players.All(p => p.IsReadyForBattle))
+                {
+                    // Start the game and place ships
+                    room.Game.StartGame();
+
+                    // Send initial board states to all players
+                    foreach (var p in room.Players)
+                    {
+                        var team = room.Game.GetTeamByPlayer(p.ConnectionId);
+                        var board = team == "Team A" ? room.Game.ATeamBoard : room.Game.BTeamBoard;
+                        await Clients.Client(p.ConnectionId).SendAsync("ReceiveBoardInfo", board.GetSerializableGrid());
+                    }
+
+                    await Clients.Group(room.RoomId).SendAsync("StartBattle");
+                }
             }
         }
     }

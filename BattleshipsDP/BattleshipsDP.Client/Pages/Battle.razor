@@ -20,8 +20,40 @@
         {
             <h2 style="color: blue;">Your turn!</h2>
         }
-      
     </div>
+
+    @if (!battleStarted)
+    {
+        <div class="setup-phase" style="margin: 20px 0;">
+            @if (isTeamLeader && !hasSelectedStrategy)
+            {
+                <div>
+                    <h3>Select Team Strategy</h3>
+                    <select @bind="selectedStrategy">
+                        <option value="Random">Random Placement</option>
+                        <option value="Edge">Edge Placement</option>
+                        <option value="Spaced">Spaced Placement</option>
+                    </select>
+                    <button @onclick="ConfirmStrategy">Confirm Strategy</button>
+                </div>
+            }
+            @if (!isReadyForBattle)
+            {
+                <div style="margin-top: 10px;">
+                    @if (hasSelectedStrategy)
+                    {
+                        <p>Selected Strategy: @selectedStrategy</p>
+                    }
+                    <button @onclick="ReadyForBattle">Ready for Battle</button>
+                </div>
+            }
+            else
+            {
+                <p>Waiting for other players...</p>
+            }
+        </div>
+    }
+
     <div style="display: flex; gap: 50px;">
         <!-- Team Board -->
         <div>
@@ -37,30 +69,19 @@
                 }
             </div>
         </div>
-        <div>
-            <label for="selectedShot">Choose a Shot:</label>
-            <select @bind="selectedShot" id="selectedShot" name="selectedShot">
-                <option value="Simple">Simple shot</option>
-                <option value="Big">Big shot</option>
-                <option value="Piercer">Piercer shot</option>
-                <option value="Slasher">Slasher shot</option>
-                <option value="Cross">Cross shot</option>
-            </select>
-        </div>
-        <div>
-            <!-- Compare Button -->
-            <button @onclick="ShootAtOpponentBoard">Fire</button>
-        </div>
-        
-        @if (isTeamLeader)
+
+        @if (battleStarted)
         {
             <div>
-                <label for="selectedStrategy">Team Strategy:</label>
-                <select @bind="selectedStrategy" id="selectedStrategy" name="selectedStrategy">
-                    <option value="Defensive">Defensive</option>
-                    <option value="Aggressive">Aggressive</option>
-                    <option value="Balanced">Balanced</option>
+                <label for="selectedShot">Choose a Shot:</label>
+                <select @bind="selectedShot" id="selectedShot" name="selectedShot">
+                    <option value="Simple">Simple shot</option>
+                    <option value="Big">Big shot</option>
+                    <option value="Piercer">Piercer shot</option>
+                    <option value="Slasher">Slasher shot</option>
+                    <option value="Cross">Cross shot</option>
                 </select>
+                <button @onclick="ShootAtOpponentBoard">Fire</button>
             </div>
         }
 
@@ -87,7 +108,6 @@
             @gameOverMessage
         </div>
     }
-
 }
 
 @code {
@@ -102,6 +122,9 @@
     private string gameOverMessage = string.Empty;
     private bool isTeamLeader = false;
     private string selectedStrategy = "Defensive";
+    private bool hasSelectedStrategy = false;
+    private bool isReadyForBattle = false;
+    private bool battleStarted = false;
 
     private List<List<GridCell>> TeamCells = new List<List<GridCell>>();
     private List<List<GridCell>> EnemyCells = new List<List<GridCell>>();
@@ -206,6 +229,20 @@
             {
                 await HandleGameOver(message);
             });
+
+            // Add new handlers
+            PlayerState.HubConnection.On<string>("ReceiveTeamStrategy", (strategy) =>
+            {
+                selectedStrategy = strategy;
+                hasSelectedStrategy = true;
+                StateHasChanged();
+            });
+
+            PlayerState.HubConnection.On("StartBattle", () =>
+            {
+                battleStarted = true;
+                StateHasChanged();
+            });
         }
     }
 
@@ -296,4 +333,24 @@
     }
 
     private bool IsHubConnectionActive() => PlayerState.HubConnection is not null;
+
+    private async Task ConfirmStrategy()
+    {
+        if (IsHubConnectionActive() && isTeamLeader)  // Only team leaders can set strategy
+        {
+            await PlayerState.HubConnection.SendAsync("ConfirmTeamStrategy", selectedStrategy);
+            hasSelectedStrategy = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ReadyForBattle()
+    {
+        if (IsHubConnectionActive())
+        {
+            await PlayerState.HubConnection.SendAsync("PlayerReadyForBattle");
+            isReadyForBattle = true;
+            StateHasChanged();
+        }
+    }
 }

@@ -12,6 +12,7 @@ namespace SharedLibrary
         public string Name { get; set; }
         public bool IsReady { get; set; }
         public bool IsTeamLeader { get; set; }
+        public bool IsReadyForBattle { get; set; } // Add new property
 
         public Player(string connectionId, string name)
         {
@@ -19,6 +20,7 @@ namespace SharedLibrary
             Name = name;
             IsReady = false;
             IsTeamLeader = false;
+            IsReadyForBattle = false;
         }
 
         public object Clone()
@@ -27,7 +29,8 @@ namespace SharedLibrary
             return new Player(this.ConnectionId, this.Name) 
             { 
                 IsReady = this.IsReady,
-                IsTeamLeader = this.IsTeamLeader
+                IsTeamLeader = this.IsTeamLeader,
+                IsReadyForBattle = this.IsReadyForBattle
             };
         }
 
