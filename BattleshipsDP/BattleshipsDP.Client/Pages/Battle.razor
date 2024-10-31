@@ -68,6 +68,15 @@
                 }
             </div>
         </div>
+        <div>
+            <h3>Shot History</h3>
+            <ul>
+                @foreach (var command in CommandInvoker.GetHistory())
+                {
+                    <li>Shot at (@command.Row, @command.Col) - Type: @command.ShotType - @(command.IsPlayerShot ? "Player" : "Enemy")</li>
+                }
+            </ul>
+        </div>
     </div>
 
     @if (!string.IsNullOrEmpty(gameOverMessage))
@@ -92,6 +101,9 @@
 
     private List<List<GridCell>> TeamCells = new List<List<GridCell>>();
     private List<List<GridCell>> EnemyCells = new List<List<GridCell>>();
+
+    private CommandInvoker CommandInvoker = new CommandInvoker();
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -234,28 +246,29 @@
         {
             if (IsHubConnectionActive())
             {
+                // Create a new shot command
+                var shotCommand = new ShotCommand(selectedRow.Value, selectedCol.Value, selectedShot, true);
+
+                // Execute the command on the enemy board
+                CommandInvoker.ExecuteCommand(shotCommand, EnemyCells);
+
+                // Send the shot to the server for synchronization
                 await PlayerState.HubConnection.SendAsync("ShootAtOpponent", selectedRow.Value, selectedCol.Value, selectedShot);
+
                 isPlayerTurn = false;
             }
         }
         else
         {
-            Console.WriteLine("No cell selected to compare.");
+            Console.WriteLine("No cell selected to shoot at.");
         }
     }
 
+    // Modify HandleShootResult to execute the shot from enemy's perspective
     private async Task HandleShootResult(int row, int col, string result)
     {
-        var cell = EnemyCells[row][col];
-        if (result == "hit")
-        {
-            cell.State = Square.Hit;
-        }
-        else if (result == "miss")
-        {
-            cell.State = Square.Miss;
-        }
-
+        var shotCommand = new ShotCommand(row, col, result, false);
+        CommandInvoker.ExecuteCommand(shotCommand, EnemyCells);
         await InvokeAsync(StateHasChanged);
     }
 
