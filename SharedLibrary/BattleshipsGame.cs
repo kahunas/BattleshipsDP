@@ -85,6 +85,15 @@ namespace SharedLibrary
             ATeamBoard = ATeam.Board;
             BTeamBoard = BTeam.Board;
 
+            // Set the first player to start the game
+            CurrentPlayerId = ATeamPlayer1Id;
+
+            // Notify observers about the first turn
+            NotifyTurnObservers();
+        }
+
+        public void PlaceShips()
+        {
             // Define ships to be placed
             IShipFactory blueShipFactory = new BlueShipFactory();
             IShipFactory redShipFactory = new RedShipFactory();
@@ -110,22 +119,6 @@ namespace SharedLibrary
             // Use the selected strategies for each team
             placementStrategies[teamAStrategy].PlaceShips(ATeamBoard, shipsToPlaceTeamA);
             placementStrategies[teamBStrategy].PlaceShips(BTeamBoard, shipsToPlaceTeamB);
-
-            //PrintTeams();
-
-            // Set the first player to start the game
-            CurrentPlayerId = ATeamPlayer1Id;
-
-            //Console.WriteLine($"First turn goes to Player 1 of Team A: {CurrentPlayerId}");
-
-            // Debug: Print the boards after placing ships
-            //Console.WriteLine("Team A Board:");
-            //ATeamBoard.PrintBoard();
-            //Console.WriteLine("Team B Board:");
-            //BTeamBoard.PrintBoard();
-
-            // Notify observers about the first turn
-            NotifyTurnObservers();
         }
 
         public void DividePlayersIntoTeams(List<Player> players)
