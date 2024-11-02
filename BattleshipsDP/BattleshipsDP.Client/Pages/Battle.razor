@@ -74,14 +74,14 @@
         {
             <div>
                 <label for="selectedShot">Choose a Shot:</label>
-                <select @bind="selectedShot" id="selectedShot" name="selectedShot">
+                <select @bind="selectedShot" id="selectedShot" name="selectedShot" disabled="@(!isPlayerTurn)">
                     <option value="Simple">Simple shot</option>
                     <option value="Big">Big shot</option>
                     <option value="Piercer">Piercer shot</option>
                     <option value="Slasher">Slasher shot</option>
                     <option value="Cross">Cross shot</option>
                 </select>
-                <button @onclick="ShootAtOpponentBoard">Fire</button>
+                <button @onclick="ShootAtOpponentBoard" disabled="@(!isPlayerTurn)">Fire</button>
             </div>
         }
 
@@ -260,7 +260,7 @@
 
     private async Task ToggleEnemyHighlight(GridCell cell)
     {
-        if (cell == null) return;
+        if (!isPlayerTurn || cell == null) return; // Add check for player turn
 
         // Prevent selecting a cell that has already been attacked
         if (cell.State == Square.Hit || cell.State == Square.Miss)
@@ -293,6 +293,8 @@
 
     private async Task ShootAtOpponentBoard()
     {
+        if (!isPlayerTurn) return; // Add check for player turn
+        
         if (selectedRow.HasValue && selectedCol.HasValue && selectedShot != null)
         {
             if (IsHubConnectionActive())

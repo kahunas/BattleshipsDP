@@ -116,7 +116,8 @@ namespace BattleshipsDP.Hubs
             var connectionId = Context.ConnectionId;
             var room = _gameService.GetRoomByPlayerId(connectionId);
 
-            if (room == null) return;
+            if (room == null || !room.Game.GameStarted || room.Game.GameOver) return;
+            if (room.Game.CurrentPlayerId != connectionId) return; // Only allow current player to highlight
 
             var teammates = room.Game.GetTeammates(connectionId);
             foreach (var teammate in teammates)
@@ -127,17 +128,19 @@ namespace BattleshipsDP.Hubs
 
         public async Task ShootAtOpponent(int row, int col, string type)
         {
-
             var connectionId = Context.ConnectionId;
             var room = _gameService.GetRoomByPlayerId(connectionId);
-            var shots = room.Game.DefineShots();
 
-            if (room == null) return;
+            if (room == null || !room.Game.GameStarted || room.Game.GameOver) return;
+
+            // Early validation of turn
             if (room.Game.CurrentPlayerId != connectionId)
             {
                 await Clients.Client(connectionId).SendAsync("NotYourTurn");
                 return;
             }
+
+            var shots = room.Game.DefineShots();
 
             var shot = shots.FirstOrDefault(s => s.Name.Equals(type, StringComparison.OrdinalIgnoreCase));
             if (shot == null)
