@@ -78,24 +78,6 @@ namespace BattleshipsDP.Hubs
             }
         }
 
-        public async Task RequestBoard()
-        {
-            var connectionId = Context.ConnectionId;
-            var room = _gameService.GetRoomByPlayerId(connectionId);
-
-            if (room == null) return;
-
-            // Determine which board to send based on the team
-            var team = room.Game.GetTeamByPlayer(connectionId);
-            var board = team == "Team A" ? room.Game.ATeam.Board : room.Game.BTeam.Board;
-
-            // Get the serializable version of the board
-            var serializableBoard = board.GetSerializableGrid();
-
-            // Send the board to the client
-            await Clients.Client(connectionId).SendAsync("ReceiveBoardState", serializableBoard);
-        }
-
         public async Task PlayerReady()
         {
             Console.WriteLine("Player is ready.");
@@ -246,8 +228,11 @@ namespace BattleshipsDP.Hubs
                 // Check if all players are ready
                 if (room.Players.All(p => p.IsReadyForBattle))
                 {
-                    // Start the game and place ships
+                    // Initialize the game and teams
                     room.Game.StartGame();
+                    
+                    // Place ships using the selected strategies
+                    room.Game.PlaceShips();
 
                     // Send initial board states to all players
                     foreach (var p in room.Players)
@@ -257,7 +242,11 @@ namespace BattleshipsDP.Hubs
                         await Clients.Client(p.ConnectionId).SendAsync("ReceiveBoardInfo", board.GetSerializableGrid());
                     }
 
+                    // Signal to clients that the battle has started
                     await Clients.Group(room.RoomId).SendAsync("StartBattle");
+                    
+                    // Start the game by notifying the first player
+                    await Clients.Client(room.Game.CurrentPlayerId).SendAsync("YourTurn");
                 }
             }
         }

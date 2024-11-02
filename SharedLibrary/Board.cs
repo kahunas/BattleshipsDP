@@ -10,13 +10,19 @@ namespace SharedLibrary
     public class Board
     {
         public int Size { get; set; }
-        public Square[,] Grid { get; set; }
+        public Square[,] Grid
+        {
+            get => _gridAdapter.GetArrayGrid();
+            set => _gridAdapter.SetGrid(value);
+        }
         public List<Ship> Ships { get; set; }
         private Random random = new Random();
+        private IGridAdapter _gridAdapter;
 
         public Board(int size = 10)
         {
             Size = size;
+            _gridAdapter = new GridAdapter(size);
             Grid = new Square[Size, Size];
             Ships = new List<Ship>();
 
@@ -33,19 +39,7 @@ namespace SharedLibrary
 
         public List<List<Square>> GetSerializableGrid()
         {
-            var serializableGrid = new List<List<Square>>();
-
-            for (int row = 0; row < Size; row++)
-            {
-                var rowList = new List<Square>();
-                for (int col = 0; col < Size; col++)
-                {
-                    rowList.Add(Grid[row, col]);
-                }
-                serializableGrid.Add(rowList);
-            }
-
-            return serializableGrid;
+            return _gridAdapter.GetListGrid();
         }
 
 
@@ -119,42 +113,6 @@ namespace SharedLibrary
             // Place the ship on the board if it's a valid position
             return PlaceShip(ship, coordinates);
         }
-
-        // Method to fire at a specific coordinate on the board
-        //public bool Fire(int row, int col)
-        //{
-        //    if (Grid[row, col] == Square.Ship)
-        //    {
-        //        Grid[row, col] = Square.Hit; // Mark hit
-        //        foreach (var ship in Ships)
-        //        {
-        //            if (ship.Hit(row, col))
-        //            {
-        //                break;
-        //            }
-        //        }
-        //        return true; // Hit
-        //    }
-        //    else if (Grid[row, col] == Square.Empty)
-        //    {
-        //        Grid[row, col] = Square.Miss; // Mark miss
-        //    }
-        //    return false; // Miss
-        //}
-
-
-        // Display the board
-        //public void Display()
-        //{
-        //    for (int row = 0; row < Size; row++)
-        //    {
-        //        for (int col = 0; col < Size; col++)
-        //        {
-        //            Console.Write(Grid[row, col].GetDescription() + " ");
-        //        }
-        //        Console.WriteLine();
-        //    }
-        //}
 
         //public void PrintBoard()
         //{
