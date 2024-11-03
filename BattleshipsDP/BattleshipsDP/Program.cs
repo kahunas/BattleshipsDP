@@ -16,7 +16,7 @@ namespace BattleshipsDP
                 .AddInteractiveWebAssemblyComponents();
 
             builder.Services.AddSignalR();
-            builder.Services.AddSingleton<GameService>();
+            //builder.Services.AddSingleton<GameService>();
 
             var app = builder.Build();
 
