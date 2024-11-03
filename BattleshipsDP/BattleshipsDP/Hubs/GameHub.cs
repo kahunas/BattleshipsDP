@@ -25,13 +25,16 @@ namespace BattleshipsDP.Hubs
             await base.OnDisconnectedAsync(exception);
         }
 
-        public async Task<GameRoom> CreateRoom(string name, string playerName)
+        public async Task<GameRoom> CreateRoom(string name, string playerName, string difficulty)
         {
-            GameRoom room = _gameService.CreateRoom(name);
+            // Create the room via GameService
+            GameRoom room = _gameService.CreateRoom(name, difficulty);
+
+            // Add the player to the room
             var newPlayer = new Player(Context.ConnectionId, playerName);
             _gameService.TryAddPlayerToRoom(room.RoomId, newPlayer);
-            //room.TryAddPlayer(newPlayer);
 
+            // Add the player to the appropriate group and notify clients
             await Groups.AddToGroupAsync(Context.ConnectionId, room.RoomId);
             await Clients.All.SendAsync("Rooms", _gameService.GetAllRooms().OrderBy(r => r.RoomName));
 
@@ -53,6 +56,15 @@ namespace BattleshipsDP.Hubs
         }
 
         public async Task<GameRoom> GetRoomById(string roomId) => _gameService.GetRoomById(roomId);
+
+        
+        public async Task<int> GetBoardSize(string playerId)
+        {
+            GameRoom room = _gameService.GetRoomByPlayerId(playerId);
+            if (room.Difficulty == "Easy") return await Task.FromResult(8);
+            else if (room.Difficulty == "Medium") return await Task.FromResult(10);
+            else return await Task.FromResult(12);
+        }
 
 
         public async Task StartGame(string roomId)

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace SharedLibrary
 {
-    public class Board
+    public abstract class Board
     {
         public int Size { get; set; }
         public Square[,] Grid

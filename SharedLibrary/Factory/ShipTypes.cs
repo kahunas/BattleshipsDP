@@ -4,12 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SharedLibrary
+namespace SharedLibrary.Factory
 {
 
     public class Destroyer : Ship
     {
-        public Destroyer(string name, int size = 2) : base(name, size)
+        public Destroyer(string name = "Destroyer", int size = 2) : base(name, size)
         {
             this.Name = name;
             this.Size = size;
@@ -20,7 +20,7 @@ namespace SharedLibrary
     }
     public class Submarine : Ship
     {
-        public Submarine(string name, int size = 3) : base(name, size)
+        public Submarine(string name = "Submarine", int size = 3) : base(name, size)
         {
             this.Name = name;
             this.Size = size;
@@ -31,7 +31,7 @@ namespace SharedLibrary
     }
     public class Battleship : Ship
     {
-        public Battleship(string name, int size = 4) : base(name, size)
+        public Battleship(string name = "Battleship", int size = 4) : base(name, size)
         {
             this.Name = name;
             this.Size = size;
@@ -42,7 +42,7 @@ namespace SharedLibrary
     }
     public class Carrier : Ship
     {
-        public Carrier(string name, int size = 5) : base(name, size)
+        public Carrier(string name = "Carrier", int size = 5) : base(name, size)
         {
             this.Name = name;
             this.Size = size;

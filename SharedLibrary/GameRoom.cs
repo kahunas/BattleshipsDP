@@ -12,13 +12,16 @@ namespace SharedLibrary
         public string RoomName { get; set; }
         public List<Player> Players { get; set; }
         public BattleshipsGame Game { get; set; }
+        public string Difficulty { get; set; }
 
-        public GameRoom(string roomId, string roomName)
+        public GameRoom(string roomId, string roomName, string difficulty = "Medium")
         {
             RoomId = roomId;
             RoomName = roomName;
             Players = new List<Player>();
             Game = new BattleshipsGame();
+            Difficulty = difficulty;
+            Game.SetGameDifficulty(difficulty);
         }
 
         public GameRoom()

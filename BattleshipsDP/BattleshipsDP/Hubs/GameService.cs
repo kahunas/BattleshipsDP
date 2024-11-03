@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using BattleshipsDP.Client.Pages;
+using Microsoft.AspNetCore.SignalR;
 using SharedLibrary;
 
 namespace BattleshipsDP.Hubs
@@ -7,33 +8,55 @@ namespace BattleshipsDP.Hubs
     {
         private readonly List<GameRoom> _rooms = new(); // Instance-level, not static
         private readonly IHubContext<GameHub> _hubContext;
+        private readonly object _lock = new object();
 
         public GameService(IHubContext<GameHub> hubContext)
         {
             _hubContext = hubContext;
         }
 
-        public IEnumerable<GameRoom> GetAllRooms() => _rooms;
+        public IEnumerable<GameRoom> GetAllRooms()
+        {
+            lock (_lock)
+            {
+                return _rooms.ToList();
+            }
+        }
 
-        public GameRoom? GetRoomById(string roomId) => _rooms.FirstOrDefault(r => r.RoomId == roomId);
+        public GameRoom GetRoomById(string roomId)
+        {
+            lock (_lock)
+            {
+                return _rooms.FirstOrDefault(r => r.RoomId == roomId);
+            }
+        }
 
         public GameRoom? GetRoomByPlayerId(string playerId)
         {
-            return _rooms.FirstOrDefault(r => r.Players.Any(p => p.ConnectionId == playerId));
+            lock (_lock)
+            {
+                return _rooms.FirstOrDefault(r => r.Players.Any(p => p.ConnectionId == playerId));
+            }
         }
 
-        public GameRoom CreateRoom(string name)
+        public GameRoom CreateRoom(string name, string difficulty)
         {
-            var roomId = Guid.NewGuid().ToString();
-            var room = new GameRoom(roomId, name);
-            _rooms.Add(room);
-            return room;
+            lock (_lock)
+            {
+                var roomId = Guid.NewGuid().ToString();
+                var room = new GameRoom(roomId, name, difficulty);  // Pass the difficulty level
+                _rooms.Add(room);
+                return room;
+            }
         }
 
         public bool TryAddPlayerToRoom(string roomId, Player player)
         {
-            var room = GetRoomById(roomId);
-            return room != null && room.TryAddPlayer(player);
+            lock (_lock)
+            {
+                var room = GetRoomById(roomId);
+                return room != null && room.TryAddPlayer(player);
+            }
         }
 
         public void StartGame(string roomId)

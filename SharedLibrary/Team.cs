@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharedLibrary.Factory;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,7 +16,7 @@ namespace SharedLibrary
         public Team(string name)
         {
             Name = name;
-            Board = new Board();
+            Board = new MediumBoard();
             Players = new List<Player>();
         }
     }

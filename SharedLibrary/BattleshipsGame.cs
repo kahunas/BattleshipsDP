@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SharedLibrary.Factory;
 using SharedLibrary.Strategies;
 
 namespace SharedLibrary
@@ -26,7 +27,10 @@ namespace SharedLibrary
         public string CurrentPlayerId { get; set; }
         public bool GameStarted { get; set; } = false;
         public bool GameOver { get; set; } = false;
-        public int boardSize = 10;
+        public int boardSize;
+        private List<(Ship, Square)> ATeamShips { get; set; }
+        private List<(Ship, Square)> BTeamShips { get; set; }
+        private LevelFactory _levelFactory { get; set; }
 
         private List<ITurnObserver> turnObservers = new List<ITurnObserver>();
         private Dictionary<string, IShipPlacementStrategy> placementStrategies;
@@ -58,6 +62,24 @@ namespace SharedLibrary
             };
         }
 
+        public void SetGameDifficulty(string difficulty)
+        {
+            switch (difficulty)
+            {
+                case "Easy":
+                    _levelFactory = new EasyFactory();
+                    break;
+                case "Medium":
+                    _levelFactory = new MediumFactory();
+                    break;
+                case "Hard":
+                    _levelFactory = new HardFactory();
+                    break;
+                default:
+                    break;
+            }
+        }
+
         public void StartGame()
         {
             Console.WriteLine("Game started");
@@ -82,8 +104,12 @@ namespace SharedLibrary
                 (Player)prototypePlayerB2.Clone()
             });
 
-            ATeamBoard = ATeam.Board;
-            BTeamBoard = BTeam.Board;
+            ATeamBoard = _levelFactory.GetBoard();
+            BTeamBoard = _levelFactory.GetBoard();
+
+            boardSize = ATeamBoard.Size;
+            //ATeamBoard = ATeam.Board;
+            //BTeamBoard = BTeam.Board;
 
             // Set the first player to start the game
             CurrentPlayerId = ATeamPlayer1Id;
@@ -94,31 +120,9 @@ namespace SharedLibrary
 
         public void PlaceShips()
         {
-            // Define ships to be placed
-            IShipFactory blueShipFactory = new BlueShipFactory();
-            IShipFactory redShipFactory = new RedShipFactory();
-
-            List<(Ship, Square)> shipsToPlaceTeamA = new List<(Ship, Square)>
-            {
-                (blueShipFactory.CreateDestroyer("Destroyer"), Square.Ship),
-                (blueShipFactory.CreateSubmarine("Submarine"), Square.Ship),
-                (blueShipFactory.CreateSubmarine("Submarine"), Square.Ship),
-                (blueShipFactory.CreateBattleship("Battleship"), Square.Ship),
-                (blueShipFactory.CreateCarrier("Carrier"), Square.Ship)
-            };
-
-            List<(Ship, Square)> shipsToPlaceTeamB = new List<(Ship, Square)>
-            {
-                (redShipFactory.CreateDestroyer("Destroyer"), Square.Ship),
-                (redShipFactory.CreateSubmarine("Submarine"), Square.Ship),
-                (redShipFactory.CreateSubmarine("Submarine"), Square.Ship),
-                (redShipFactory.CreateBattleship("Battleship"), Square.Ship),
-                (redShipFactory.CreateCarrier("Carrier"), Square.Ship)
-            };
-
             // Use the selected strategies for each team
-            placementStrategies[teamAStrategy].PlaceShips(ATeamBoard, shipsToPlaceTeamA);
-            placementStrategies[teamBStrategy].PlaceShips(BTeamBoard, shipsToPlaceTeamB);
+            placementStrategies[teamAStrategy].PlaceShips(ATeamBoard, _levelFactory.GetShips());
+            placementStrategies[teamBStrategy].PlaceShips(BTeamBoard, _levelFactory.GetShips());
         }
 
         public void DividePlayersIntoTeams(List<Player> players)
@@ -132,12 +136,12 @@ namespace SharedLibrary
             ATeam = new Team("Team A")
             {
                 Players = new List<Player> { players[0], players[1] },
-                Board = new Board(boardSize)
+                Board = new MediumBoard()
             };
             BTeam = new Team("Team B")
             {
                 Players = new List<Player> { players[2], players[3] },
-                Board = new Board(boardSize)
+                Board = new MediumBoard()
             };
 
             ATeamPlayer1Id = players[0].ConnectionId;

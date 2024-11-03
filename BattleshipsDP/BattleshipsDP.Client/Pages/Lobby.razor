@@ -6,7 +6,7 @@
 
 @code {
     private List<GameRoom> rooms = new();
-    
+
     private string playerName = string.Empty;
     private bool userNameValid = false;
 
@@ -14,12 +14,17 @@
     private bool roomNameValid = false;
 
     private GameRoom? currentRoom;
+
+    // New difficulty level selection
+    private string selectedDifficulty = string.Empty;
+    private bool difficultySelected = false;
 }
 
 
 <div class="container">
 
-    @if (!userNameValid){
+    @if (!userNameValid)
+    {
         <h3>Welcome to Battleships Game</h3>
         <div class="form-group">
             <input class="input-field" @bind="playerName" placeholder="Your Name" />
@@ -29,18 +34,39 @@
         </div>
         <p class="validation-message">Please enter a valid username to proceed.</p>
     }
-    else{
+    else
+    {
         <h1>Hello, @playerName!</h1>
         <h3>To continue, create or join a room!</h3>
+
+        <!-- Room name input -->
         <div class="form-group">
             <input class="input-field" @bind="currentRoomName" placeholder="Room Name" />
         </div>
+
+        <!-- Difficulty selection dropdown -->
+        <div class="form-group">
+            <select class="input-field" @bind="selectedDifficulty">
+                <option value="">Select Difficulty</option>
+                <option value="Easy">Easy</option>
+                <option value="Medium">Medium</option>
+                <option value="Hard">Hard</option>
+            </select>
+        </div>
+
+        <!-- Create Room button -->
         <div class="form-group">
             <button class="btn" @onclick="CreateRoom">Create Room</button>
         </div>
+
+        <!-- Validation messages for room name and difficulty -->
         @if (!roomNameValid)
         {
             <p class="validation-message">Room name cannot be empty!</p>
+        }
+        @if (!difficultySelected)
+        {
+            <p class="validation-message">Please select a difficulty level!</p>
         }
 
         <h3>Rooms:</h3>
@@ -88,18 +114,19 @@
         transition: background-color 0.3s;
     }
 
-    .btn:hover {
-        background-color: #0056b3;
-    }
+        .btn:hover {
+            background-color: #0056b3;
+        }
 
     .room-list {
         list-style-type: none;
         padding: 0;
     }
 
-    .room-list li {
-        margin: 10px 0;
-    }
+        .room-list li {
+            margin: 10px 0;
+        }
+
     .validation-message {
         color: red;
         font-size: 14px;
@@ -109,9 +136,9 @@
         background-color: #007bff;
     }
 
-    .validate-btn:hover {
-        background-color: #218838;
-    }
+        .validate-btn:hover {
+            background-color: #218838;
+        }
 </style>
 
 @code {
@@ -131,12 +158,19 @@
     {
         if (!IsHubConnectionActive()) return;
 
-        if (!string.IsNullOrEmpty(currentRoomName)){
-            roomNameValid = true;
-            currentRoom = await PlayerState.HubConnection.InvokeAsync<GameRoom>("CreateRoom",
-                currentRoomName, playerName);
+        // Validate room name and difficulty selection
+        roomNameValid = !string.IsNullOrEmpty(currentRoomName);
+        difficultySelected = !string.IsNullOrEmpty(selectedDifficulty);
+
+        if (roomNameValid && difficultySelected)
+        {
+            // Create room with selected difficulty
+            currentRoom = await PlayerState.HubConnection.InvokeAsync<GameRoom>(
+                "CreateRoom", currentRoomName, playerName, selectedDifficulty);
             await NavigateToRoom(currentRoom.RoomId);
         }
+
+        StateHasChanged();
     }
 
     private async Task JoinRoom(string roomId)
