@@ -337,22 +337,42 @@
 
     private async Task ShootAtOpponentBoard()
     {
-        if (!isPlayerTurn) return; // Add check for player turn
-        
+        if (!isPlayerTurn) return; // Check if it's the player's turn
+
         if (selectedRow.HasValue && selectedCol.HasValue && selectedShot != null)
         {
             if (IsHubConnectionActive())
             {
-                // Create a new shot command
-                var shotCommand = new ShotCommand(selectedRow.Value, selectedCol.Value, selectedShot, true);
+                // Step 1: Use ShotBuilder to configure a base shot
+                var shotBuilder = new ShotBuilder()
+                    .SetName(selectedShot)
+                    .SetSpread(new List<(int, int)> { (0, 0) });  // Basic single shot spread
 
-                // Execute the command on the enemy board
-                CommandInvoker.ExecuteCommand(shotCommand, EnemyCells);
+                IShot shot = shotBuilder.Build();
 
-                // Send the shot to the server for synchronization
+                // Step 2: Apply SplashDamageDecorator if selectedShot has splash effect
+                if (selectedShot == "Slasher")  // Example: Slasher shot has splash effect
+                {
+                    shot = new SplashDamageDecorator(shot, splashRadius: 1); // Adjust splash radius as needed
+                }
+
+                // Step 3: Calculate final shot coordinates from the decorated shot
+                var shotCoordinates = shot.ShotCoordinates(selectedRow.Value, selectedCol.Value);
+
+                // Step 4: Execute ShotCommand for each coordinate in the decorated shot
+                foreach (var (x, y) in shotCoordinates)
+                {
+                    if (x >= 0 && y >= 0 && x < EnemyCells.Count && y < EnemyCells[x].Count)
+                    {
+                        var shotCommand = new ShotCommand(x, y, selectedShot, true);
+                        CommandInvoker.ExecuteCommand(shotCommand, EnemyCells);
+                    }
+                }
+
+                // Step 5: Send the original shot to the server for synchronization (if needed)
                 await PlayerState.HubConnection.SendAsync("ShootAtOpponent", selectedRow.Value, selectedCol.Value, selectedShot);
 
-                isPlayerTurn = false;
+                isPlayerTurn = false; // End player's turn
             }
         }
         else
@@ -360,6 +380,8 @@
             Console.WriteLine("No cell selected to shoot at.");
         }
     }
+
+
 
     // Modify HandleShootResult to execute the shot from enemy's perspective
     private async Task HandleShootResult(int row, int col, string result)
