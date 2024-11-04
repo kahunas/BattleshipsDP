@@ -1,7 +1,11 @@
 ﻿using BattleshipsDP.Client;
 using Microsoft.AspNetCore.SignalR;
 using SharedLibrary;
+using SharedLibrary.Bridge;
 using System.Numerics;
+using SharedLibrary.Builder;
+using BattleshipsDP.Client.Pages;
+using System.IO;
 
 namespace BattleshipsDP.Hubs
 {
@@ -66,6 +70,34 @@ namespace BattleshipsDP.Hubs
             else return await Task.FromResult(12);
         }
 
+        public async Task<int> GetBig(string playerId)
+        {
+            var room = _gameService.GetRoomByPlayerId(playerId);
+            var team = room.Game.GetTeamByPlayer(playerId) == "Team A" ? room.Game.ATeam : room.Game.BTeam;
+            int amount = team.RemainingShots(new BigShot().GetType());
+            return amount;
+        }
+        public async Task<int> GetPiercer(string playerId)
+        {
+            var room = _gameService.GetRoomByPlayerId(playerId);
+            var team = room.Game.GetTeamByPlayer(playerId) == "Team A" ? room.Game.ATeam : room.Game.BTeam;
+            int amount = team.RemainingShots(new PiercerShot().GetType());
+            return amount;
+        }
+        public async Task<int> GetSlasher(string playerId)
+        {
+            var room = _gameService.GetRoomByPlayerId(playerId);
+            var team = room.Game.GetTeamByPlayer(playerId) == "Team A" ? room.Game.ATeam : room.Game.BTeam;
+            int amount = team.RemainingShots(new SlasherShot().GetType());
+            return amount;
+        }
+        public async Task<int> GetCross(string playerId)
+        {
+            var room = _gameService.GetRoomByPlayerId(playerId);
+            var team = room.Game.GetTeamByPlayer(playerId) == "Team A" ? room.Game.ATeam : room.Game.BTeam;
+            int amount = team.RemainingShots(new CrossShot().GetType());
+            return amount;
+        }
 
         public async Task StartGame(string roomId)
         {
@@ -86,7 +118,9 @@ namespace BattleshipsDP.Hubs
                         player.ConnectionId,
                         team,
                         player.IsTeamLeader);
+
                 }
+
             }
         }
 
@@ -121,6 +155,10 @@ namespace BattleshipsDP.Hubs
                 connectionId,
                 team,
                 isTeamLeader);
+            await NotifyBigRemaining(room, connectionId);
+            await NotifyPiercerRemaining(room, connectionId);
+            await NotifySlasherRemaining(room, connectionId);
+            await NotifyCrossRemaining(room, connectionId);
         }
 
         public async Task HighlightBlockForTeam(int row, int col)
@@ -142,52 +180,141 @@ namespace BattleshipsDP.Hubs
         {
             var connectionId = Context.ConnectionId;
             var room = _gameService.GetRoomByPlayerId(connectionId);
-
+            IShotCollection shot;
             if (room == null || !room.Game.GameStarted || room.Game.GameOver) return;
 
-            // Early validation of turn
+            if(type == "Simple")
+            {
+                shot = new SimpleShot();
+            }
+            else if(type == "Big")
+            {
+                shot = new BigShot();
+            }
+            else if (type =="Slasher")
+            {
+                shot = new SlasherShot();
+            }
+            else if (type == "Piercer")
+            {
+                shot = new PiercerShot();
+            }
+            else if (type == "Cross")
+            {
+                shot = new CrossShot();
+            }
+            else
+            {
+                shot = null;
+            }
+
             if (room.Game.CurrentPlayerId != connectionId)
             {
                 await Clients.Client(connectionId).SendAsync("NotYourTurn");
                 return;
             }
 
-            var shots = room.Game.DefineShots();
+            var player = room.Players.FirstOrDefault(p => p.ConnectionId == connectionId);
+            var game = room.Game;
+            var teamName = game.GetTeamByPlayer(connectionId);
+            Team team = room.Game.GetTeamByPlayer(connectionId) == "Team A" ? room.Game.ATeam : room.Game.BTeam; ;
 
-            var shot = shots.FirstOrDefault(s => s.Name.Equals(type, StringComparison.OrdinalIgnoreCase));
-            if (shot == null)
+            //var shot = player?.(shotType);
+            bool shotmade;
+            if(shot.GetType().Equals(new SimpleShot().GetType()))
+            {
+                shotmade = true;
+            }
+            else
+            {
+                shotmade = team.TakeShot(shot.GetType());
+            }
+            if (shot == null || !shotmade)
             {
                 await Clients.Client(connectionId).SendAsync("InvalidShotType");
+                room.Game.UpdateTurn();
                 return;
             }
-
-            var coordinates = shot.ShotCoordinates(row, col);
-            bool isGameOver = false;
-
-            foreach (var hit in coordinates)
+            if (shotmade)
             {
-                string result = room.Game.ShootCell(hit.Item1, hit.Item2, connectionId, out isGameOver);
+                var coordinates = shot.GetSpread(row, col);
+                bool isGameOver = false;
 
-                if (result == "already_shot")
+                foreach (var hit in coordinates)
                 {
-                    await Clients.Client(connectionId).SendAsync("AlreadyShot", hit.Item1, hit.Item2);
-                    continue;
+                    string result = room.Game.ShootCell(hit.Item1, hit.Item2, connectionId, out isGameOver);
+
+                    if (result == "already_shot")
+                    {
+                        await Clients.Client(connectionId).SendAsync("AlreadyShot", hit.Item1, hit.Item2);
+                        continue;
+                    }
+
+                    await NotifyTeammatesOfShot(room, connectionId, hit, result);
+                    await NotifyOpponentsOfShot(room, connectionId, hit, result);
+                    await NotifyBigRemaining(room, connectionId);
+                    await NotifyPiercerRemaining(room, connectionId);
+                    await NotifySlasherRemaining(room, connectionId);
+                    await NotifyCrossRemaining(room, connectionId);
+
+                    if (isGameOver)
+                    {
+                        await Clients.Group(room.RoomId).SendAsync("ReceiveGameOver", $"{room.Game.GetTeamByPlayer(connectionId)} wins!");
+                        room.Game.GameOver = true;
+                        break;
+                    }
                 }
 
-                await NotifyTeammatesOfShot(room, connectionId, hit, result);
-                await NotifyOpponentsOfShot(room, connectionId, hit, result);
-
-                if (isGameOver)
+                if (!isGameOver)
                 {
-                    await Clients.Group(room.RoomId).SendAsync("ReceiveGameOver", $"{room.Game.GetTeamByPlayer(connectionId)} wins!");
-                    room.Game.GameOver = true;
-                    break;
+                    room.Game.UpdateTurn();
                 }
             }
+        }
 
-            if (!isGameOver)
+        public async Task NotifyBigRemaining(GameRoom room, string connectionId)
+        {
+            var team = room.Game.GetTeamByPlayer(connectionId) == "Team A" ? room.Game.ATeam : room.Game.BTeam;
+            int amount = team.RemainingShots(new BigShot().GetType());
+            var teammates = room.Game.GetTeammates(connectionId);
+            var player = room.Players.FirstOrDefault(p => p.ConnectionId == connectionId);
+            await Clients.Client(player.ConnectionId).SendAsync("ReceiveBigAmount", amount);
+            foreach (var teammate in teammates)
             {
-                room.Game.UpdateTurn();
+                await Clients.Client(teammate.ConnectionId).SendAsync("ReceiveBigAmount", amount);
+            }
+        }
+
+        public async Task NotifyPiercerRemaining(GameRoom room, string connectionId)
+        {
+            var team = room.Game.GetTeamByPlayer(connectionId) == "Team A" ? room.Game.ATeam : room.Game.BTeam;
+            int amount = team.RemainingShots(new PiercerShot().GetType());
+            var teammates = room.Game.GetTeammates(connectionId);
+            foreach (var teammate in teammates)
+            {
+                await Clients.Client(teammate.ConnectionId).SendAsync("ReceivePiercerAmount", amount);
+            }
+        }
+
+        public async Task NotifySlasherRemaining(GameRoom room, string connectionId)
+        {
+            var team = room.Game.GetTeamByPlayer(connectionId) == "Team A" ? room.Game.ATeam : room.Game.BTeam;
+            int amount = team.RemainingShots(new SlasherShot().GetType());
+            var teammates = room.Game.GetTeammates(connectionId);
+            foreach (var teammate in teammates)
+            {
+                await Clients.Client(teammate.ConnectionId).SendAsync("ReceiveSlasherAmount", amount);
+            }
+        }
+
+        public async Task NotifyCrossRemaining(GameRoom room, string connectionId)
+        {
+            var team = room.Game.GetTeamByPlayer(connectionId) == "Team A" ? room.Game.ATeam : room.Game.BTeam;
+            int amount = team.RemainingShots(new CrossShot().GetType());
+            var teammates = room.Game.GetTeammates(connectionId);
+            foreach (var teammate in teammates)
+            {
+                await Clients.Client(teammate.ConnectionId).SendAsync("ReceiveCrossAmount", amount);
             }
         }
 
@@ -226,6 +353,10 @@ namespace BattleshipsDP.Hubs
             foreach (var teammate in teammates)
             {
                 await Clients.Client(teammate.ConnectionId).SendAsync("ReceiveTeamStrategy", strategy);
+                await NotifyBigRemaining(room, connectionId);
+                await NotifyPiercerRemaining(room, connectionId);
+                await NotifySlasherRemaining(room, connectionId);
+                await NotifyCrossRemaining(room, connectionId);
             }
         }
 
@@ -248,6 +379,8 @@ namespace BattleshipsDP.Hubs
                     
                     // Place ships using the selected strategies
                     room.Game.PlaceShips();
+                    room.Game.CountShots();
+                    
 
                     // Send initial board states to all players
                     foreach (var p in room.Players)

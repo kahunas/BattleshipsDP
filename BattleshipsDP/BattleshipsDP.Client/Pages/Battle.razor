@@ -100,10 +100,10 @@
                 <label for="selectedShot">Choose a Shot:</label>
                 <select @bind="selectedShot" id="selectedShot" name="selectedShot" disabled="@(!isPlayerTurn)">
                     <option value="Simple">Simple shot</option>
-                    <option value="Big">Big shot</option>
-                    <option value="Piercer">Piercer shot</option>
-                    <option value="Slasher">Slasher shot</option>
-                    <option value="Cross">Cross shot</option>
+                    <option value="Big" disabled="@(!IsBigAvailable)">Big shot (@BigAmount)</option>
+                    <option value="Piercer" disabled="@(!IsPiercerAvailable)">Piercer shot (@PiercerAmount)</option>
+                    <option value="Slasher" disabled="@(!IsSlasherAvailable)">Slasher shot(@SlasherAmount)</option>
+                    <option value="Cross" disabled="@(!IsCrossAvailable)">Cross shot (@CrossAmount)</option>
                 </select>
                 <button @onclick="ShootAtOpponentBoard" disabled="@(!isPlayerTurn)">Fire</button>
             </div>
@@ -183,6 +183,14 @@
     private bool hasSelectedStrategy = false;
     private bool isReadyForBattle = false;
     private bool battleStarted = false;
+    private bool IsBigAvailable = false;
+    private bool IsSlasherAvailable = false;
+    private bool IsPiercerAvailable = false;
+    private bool IsCrossAvailable = false;
+    private int? BigAmount = null;
+    private int? PiercerAmount = null;
+    private int? SlasherAmount = null;
+    private int? CrossAmount = null;
 
     private List<List<GridCell>> TeamCells = new List<List<GridCell>>();
     private List<List<GridCell>> EnemyCells = new List<List<GridCell>>();
@@ -244,6 +252,23 @@
                 }
                 EnemyCells[row][col].IsHighlighted = true;
                 InvokeAsync(StateHasChanged);
+            });
+
+            PlayerState.HubConnection.On<int>("ReceiveBigAmount", async (amount) =>
+            {
+                await HandleBigAmount(amount);
+            });
+            PlayerState.HubConnection.On<int>("ReceivePiercerAmount", async (amount) =>
+            {
+                await HandlePiercerAmount(amount);
+            });
+            PlayerState.HubConnection.On<int>("ReceiveSlasherAmount", async (amount) =>
+            {
+                await HandleSlasherAmount(amount);
+            });
+            PlayerState.HubConnection.On<int>("ReceiveCrossAmount", async (amount) =>
+            {
+                await HandleCrossAmount(amount);
             });
 
             PlayerState.HubConnection.On<int, int, string>("ReceiveShootResult", async (row, col, result) =>
@@ -332,27 +357,27 @@
         {
             if (IsHubConnectionActive())
             {
-                var shotBuilder = new ShotBuilder()
-                    .SetName(selectedShot)
-                    .SetSpread(new List<(int, int)> { (0, 0) });
-
-                IShot shot = shotBuilder.Build();
-
-                if (selectedShot == "Slasher")
-                {
-                    shot = new SplashDamageDecorator(shot, splashRadius: 1);
-                }
-
-                var shotCoordinates = shot.ShotCoordinates(selectedRow.Value, selectedCol.Value);
-
-                foreach (var (x, y) in shotCoordinates)
-                {
-                    if (x >= 0 && y >= 0 && x < EnemyCells.Count && y < EnemyCells[x].Count)
-                    {
-                        var shotCommand = new ShotCommand(x, y, selectedShot, true);
-                        CommandInvoker.ExecuteCommand(shotCommand, EnemyCells);
-                    }
-                }
+                //var shotBuilder = new ShotBuilder()
+                //    .SetName(selectedShot)
+                //    .SetSpread(new List<(int, int)> { (0, 0) });
+                //
+                //IShot shot = shotBuilder.Build();
+                //
+                //if (selectedShot == "Slasher")
+                //{
+                //    shot = new SplashDamageDecorator(shot, splashRadius: 1);
+                //}
+                //
+                //var shotCoordinates = shot.ShotCoordinates(selectedRow.Value, selectedCol.Value);
+                //
+                //foreach (var (x, y) in shotCoordinates)
+                //{
+                //    if (x >= 0 && y >= 0 && x < EnemyCells.Count && y < EnemyCells[x].Count)
+                //    {
+                //        var shotCommand = new ShotCommand(x, y, selectedShot, true);
+                //        CommandInvoker.ExecuteCommand(shotCommand, EnemyCells);
+                //    }
+                //}
 
                 await PlayerState.HubConnection.SendAsync("ShootAtOpponent", selectedRow.Value, selectedCol.Value, selectedShot);
 
@@ -394,6 +419,62 @@
         await InvokeAsync(StateHasChanged);
     }
 
+    private async Task HandleBigAmount(int amount)
+    {
+        BigAmount = amount;
+        if(amount > 0)
+        {
+            IsBigAvailable = true;
+        }
+        else
+        {
+            IsBigAvailable = false;
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandlePiercerAmount(int amount)
+    {
+        PiercerAmount = amount;
+        if (amount > 0)
+        {
+            IsPiercerAvailable = true;
+        }
+        else
+        {
+            IsPiercerAvailable = false;
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleSlasherAmount(int amount)
+    {
+        SlasherAmount = amount;
+        if (amount > 0)
+        {
+            IsSlasherAvailable = true;
+        }
+        else
+        {
+            IsSlasherAvailable = false;
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleCrossAmount(int amount)
+    {
+        CrossAmount = amount;
+        if (amount > 0)
+        {
+            IsCrossAvailable = true;
+        }
+        else
+        {
+            IsCrossAvailable = false;
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
     private bool IsHubConnectionActive() => PlayerState.HubConnection is not null;
 
     private async Task ConfirmStrategy()
@@ -412,6 +493,10 @@
         {
             await PlayerState.HubConnection.SendAsync("PlayerReadyForBattle");
             isReadyForBattle = true;
+ //           BigAmount = await PlayerState.HubConnection.InvokeAsync<int>("GetBig", PlayerState.HubConnection.ConnectionId);
+ //           PiercerAmount = await PlayerState.HubConnection.InvokeAsync<int>("GetPiercer", PlayerState.HubConnection.ConnectionId);
+ //           SlasherAmount = await PlayerState.HubConnection.InvokeAsync<int>("GetSlasher", PlayerState.HubConnection.ConnectionId);
+ //           CrossAmount = await PlayerState.HubConnection.InvokeAsync<int>("GetCross", PlayerState.HubConnection.ConnectionId);
             StateHasChanged();
         }
     }

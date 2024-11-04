@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SharedLibrary.Builder;
 using SharedLibrary.Factory;
 using SharedLibrary.Strategies;
 
@@ -28,8 +29,8 @@ namespace SharedLibrary
         public bool GameStarted { get; set; } = false;
         public bool GameOver { get; set; } = false;
         public int boardSize;
-        private List<(Ship, Square)> ATeamShips { get; set; }
-        private List<(Ship, Square)> BTeamShips { get; set; }
+        //private List<(Ship, Square)> ATeamShips { get; set; }
+        //private List<(Ship, Square)> BTeamShips { get; set; }
         private LevelFactory _levelFactory { get; set; }
 
         private List<ITurnObserver> turnObservers = new List<ITurnObserver>();
@@ -123,6 +124,24 @@ namespace SharedLibrary
             // Use the selected strategies for each team
             placementStrategies[teamAStrategy].PlaceShips(ATeamBoard, _levelFactory.GetShips());
             placementStrategies[teamBStrategy].PlaceShips(BTeamBoard, _levelFactory.GetShips());
+        }
+
+        public void CountShots()
+        {
+            foreach(var ship in ATeamBoard.Ships)
+            {
+                foreach(var shot in ship.SpecialShots)
+                {
+                    ATeam.AddShots(shot.GetType(), shot);
+                }
+            }
+            foreach (var ship in BTeamBoard.Ships)
+            {
+                foreach (var shot in ship.SpecialShots)
+                {
+                    BTeam.AddShots(shot.GetType(), shot);
+                }
+            }
         }
 
         public void DividePlayersIntoTeams(List<Player> players)
@@ -279,31 +298,31 @@ namespace SharedLibrary
             }
         }
 
-        public List<IShot> DefineShots()
-        {
-            var builder = new ShotBuilder();
-
-            return new List<IShot>
-    {
-        builder.SetName("Simple").SetSpread(new List<(int, int)> { (0, 0) }).Build(),
-        builder.SetName("Big").SetSpread(new List<(int, int)>
-        {
-            (0, 0), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)
-        }).Build(),
-        builder.SetName("Piercer").SetSpread(new List<(int, int)>
-        {
-            (0, 0), (1, 0), (2, 0), (3, 0)
-        }).Build(),
-        builder.SetName("Slasher").SetSpread(new List<(int, int)>
-        {
-            (0, 0), (0, 1), (0, 2), (0, 3)
-        }).Build(),
-        builder.SetName("Cross").SetSpread(new List<(int, int)>
-        {
-            (0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)
-        }).Build()
-    };
-        }
+    //    public List<IShot> DefineShots()
+    //    {
+    //        var builder = new ShotBuilder();
+    //
+    //        return new List<IShot>
+    //{
+    //    builder.SetName("Simple").SetSpread(new List<(int, int)> { (0, 0) }).Build(),
+    //    builder.SetName("Big").SetSpread(new List<(int, int)>
+    //    {
+    //        (0, 0), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)
+    //    }).Build(),
+    //    builder.SetName("Piercer").SetSpread(new List<(int, int)>
+    //    {
+    //        (0, 0), (1, 0), (2, 0), (3, 0)
+    //    }).Build(),
+    //    builder.SetName("Slasher").SetSpread(new List<(int, int)>
+    //    {
+    //        (0, 0), (0, 1), (0, 2), (0, 3)
+    //    }).Build(),
+    //    builder.SetName("Cross").SetSpread(new List<(int, int)>
+    //    {
+    //        (0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)
+    //    }).Build()
+    //};
+    //    }
 
         // Add new method to set team strategy
         public void SetTeamStrategy(string team, string strategy)
