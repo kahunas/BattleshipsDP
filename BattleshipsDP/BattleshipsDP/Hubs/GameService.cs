@@ -64,7 +64,4 @@ namespace BattleshipsDP.Hubs
             room?.Game.StartGame();
         }
     }
-
 }
-
-
