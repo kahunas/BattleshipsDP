@@ -12,9 +12,11 @@ namespace BattleshipsDP.Hubs
     public class GameHub : Hub
     {
         private readonly GameService _gameService;
-        public GameHub(GameService gameService)
+
+        // Retrieve the singleton instance of GameService
+        public GameHub()
         {
-            _gameService = gameService;
+            _gameService = GameService.Instance; // Access the singleton instance directly
         }
 
         public override async Task OnConnectedAsync()
