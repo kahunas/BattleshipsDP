@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BattleshipsDP.Client", "Bat
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharedLibrary", "SharedLibrary\SharedLibrary.csproj", "{DF6764A7-6A3E-4452-BDD0-6ED87382AD24}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests\Tests.csproj", "{56375E89-43E9-4E12-BEAD-170A5DC3ACDE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{DF6764A7-6A3E-4452-BDD0-6ED87382AD24}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DF6764A7-6A3E-4452-BDD0-6ED87382AD24}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DF6764A7-6A3E-4452-BDD0-6ED87382AD24}.Release|Any CPU.Build.0 = Release|Any CPU
+		{56375E89-43E9-4E12-BEAD-170A5DC3ACDE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{56375E89-43E9-4E12-BEAD-170A5DC3ACDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{56375E89-43E9-4E12-BEAD-170A5DC3ACDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{56375E89-43E9-4E12-BEAD-170A5DC3ACDE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
