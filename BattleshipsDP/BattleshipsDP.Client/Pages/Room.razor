@@ -29,6 +29,11 @@
         {
             <button class="btn" @onclick="StartGame">Start Game</button>
         }
+
+        @if (CurrentRoom.Game.ATeamPlayer1Id == myPlayerId)
+        {
+            <button class="btn reset-btn" @onclick="ResetGame">Reset Game</button>
+        }
     </div>
 }
 
@@ -62,6 +67,14 @@
         cursor: pointer;
         transition: background-color 0.3s;
     }
+
+    .reset-btn {
+        margin-top: 20px;
+        background-color: #dc3545;
+    }
+    .reset-btn:hover {
+        background-color: #bd2130;
+    }
 </style>
 
 @code {
@@ -92,6 +105,11 @@
         {
             NavigationManager.NavigateTo("/battle");
         });
+
+        PlayerState.HubConnection.On("GameReset", () =>
+        {
+            NavigationManager.NavigateTo("/", true);
+        });
     }
 
     async Task StartGame()
@@ -100,6 +118,14 @@
             return;
 
         await PlayerState.HubConnection.InvokeAsync("StartGame", CurrentRoom.RoomId);
+    }
+
+    private async Task ResetGame()
+    {
+        if (IsHubConnectionActive())
+        {
+            await PlayerState.HubConnection.SendAsync("ResetGame");
+        }
     }
 
     private bool IsHubConnectionActive() => PlayerState.HubConnection is not null;

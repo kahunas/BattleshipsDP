@@ -20,6 +20,10 @@
         {
             <h2 style="color: blue;">Your turn!</h2>
         }
+        @if (isTeamLeader && PlayerTeam == "Team A")
+        {
+            <button class="btn reset-btn" @onclick="ResetGame">Reset Game</button>
+        }
     </div>
 
     @if (!battleStarted)
@@ -166,6 +170,16 @@
         </div>
     }
 }
+
+<style>
+    .reset-btn {
+        margin-top: 20px;
+        background-color: #dc3545;
+    }
+    .reset-btn:hover {
+        background-color: #bd2130;
+    }
+</style>
 
 @code {
     private int boardSize; // Initialize to a default, can be modified based on user input
@@ -498,6 +512,14 @@
  //           SlasherAmount = await PlayerState.HubConnection.InvokeAsync<int>("GetSlasher", PlayerState.HubConnection.ConnectionId);
  //           CrossAmount = await PlayerState.HubConnection.InvokeAsync<int>("GetCross", PlayerState.HubConnection.ConnectionId);
             StateHasChanged();
+        }
+    }
+
+    private async Task ResetGame()
+    {
+        if (IsHubConnectionActive())
+        {
+            await PlayerState.HubConnection.SendAsync("ResetGame");
         }
     }
 }

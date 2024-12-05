@@ -29,6 +29,12 @@ namespace BattleshipsDP.Hubs
             }
         }
 
+        public void Reset()
+        {
+            _rooms.Clear();
+            _instance = new GameService();
+        }
+
         public IEnumerable<GameRoom> GetAllRooms()
         {
             return _rooms.ToList();

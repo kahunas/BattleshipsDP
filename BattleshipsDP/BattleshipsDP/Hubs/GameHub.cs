@@ -400,5 +400,11 @@ namespace BattleshipsDP.Hubs
                 }
             }
         }
+
+        public async Task ResetGame()
+        {
+            _gameService.Reset();
+            await Clients.All.SendAsync("GameReset");
+        }
     }
 }
