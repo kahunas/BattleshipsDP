@@ -37,6 +37,7 @@ namespace SharedLibrary
         private Dictionary<string, IShipPlacementStrategy> placementStrategies;
         private string teamAStrategy = "Random";
         private string teamBStrategy = "Random";
+        private Dictionary<string, string> playerActiveShots = new Dictionary<string, string>();
 
         //List<(Ship, Square)> shipsToPlace = new List<(Ship, Square)>
         //    {
@@ -333,6 +334,22 @@ namespace SharedLibrary
                 else if (team == "Team B")
                     teamBStrategy = strategy;
             }
+        }
+
+        public string SetSelectedShotType(string playerId, string shotType, out bool isGameOver)
+        {
+            isGameOver = false;
+            if (!playerActiveShots.ContainsKey(playerId))
+            {
+                playerActiveShots[playerId] = "Simple";
+            }
+            playerActiveShots[playerId] = shotType;
+            return shotType;
+        }
+
+        public string GetActiveShot(string playerId)
+        {
+            return playerActiveShots.GetValueOrDefault(playerId, "Simple");
         }
     }
 }
