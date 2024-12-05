@@ -28,7 +28,7 @@ namespace SharedLibrary.Strategies
                 int row = isHorizontal ? startRow : startRow + i;
                 int col = isHorizontal ? startCol + i : startCol;
 
-                if (row >= board.Size || col >= board.Size || board.Grid[row, col] != Square.Empty)
+                if (row >= board.Size || col >= board.Size || board.Grid[row][col] != Square.Empty)
                 {
                     return false;
                 }

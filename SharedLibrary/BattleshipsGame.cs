@@ -46,7 +46,7 @@ namespace SharedLibrary
         //        (new Ship("Battleship", 4), Square.Ship),
         //        (new Ship("Carrier", 5), Square.Ship)
         //    };
-        
+
         public BattleshipsGame()
         {
             ATeamPlayer1Id = string.Empty;
@@ -128,9 +128,9 @@ namespace SharedLibrary
 
         public void CountShots()
         {
-            foreach(var ship in ATeamBoard.Ships)
+            foreach (var ship in ATeamBoard.Ships)
             {
-                foreach(var shot in ship.SpecialShots)
+                foreach (var shot in ship.SpecialShots)
                 {
                     ATeam.AddShots(shot.GetType(), shot);
                 }
@@ -239,20 +239,20 @@ namespace SharedLibrary
             // Determine the attacking and defending teams
             string attackingTeam = GetTeamByPlayer(connectionId);
             var opponentBoard = attackingTeam == "Team A" ? BTeamBoard : ATeamBoard;
-            
+
             // Determine if it's a hit or miss
             string result = null;
             if (boardSize > row && boardSize > col)
             {
                 // Check if cell has already been shot
-                if (opponentBoard.Grid[row, col] == Square.Hit || opponentBoard.Grid[row, col] == Square.Miss)
+                if (opponentBoard.Grid[row][col] == Square.Hit || opponentBoard.Grid[row][col] == Square.Miss)
                 {
                     result = "already_shot";
                 }
 
-                if (opponentBoard.Grid[row, col] == Square.Ship)
+                if (opponentBoard.Grid[row][col] == Square.Ship)
                 {
-                    opponentBoard.Grid[row, col] = Square.Hit;
+                    opponentBoard.Grid[row][col] = Square.Hit;
                     result = "hit";
 
                     foreach (var ship in opponentBoard.Ships)
@@ -270,7 +270,7 @@ namespace SharedLibrary
                 }
                 else
                 {
-                    opponentBoard.Grid[row, col] = Square.Miss;
+                    opponentBoard.Grid[row][col] = Square.Miss;
                     result = "miss";
                 }
             }
@@ -279,8 +279,7 @@ namespace SharedLibrary
                 result = "miss";
             }
 
-
-                return result;
+            return result;
         }
 
         public void PrintTeams()
@@ -298,31 +297,31 @@ namespace SharedLibrary
             }
         }
 
-    //    public List<IShot> DefineShots()
-    //    {
-    //        var builder = new ShotBuilder();
-    //
-    //        return new List<IShot>
-    //{
-    //    builder.SetName("Simple").SetSpread(new List<(int, int)> { (0, 0) }).Build(),
-    //    builder.SetName("Big").SetSpread(new List<(int, int)>
-    //    {
-    //        (0, 0), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)
-    //    }).Build(),
-    //    builder.SetName("Piercer").SetSpread(new List<(int, int)>
-    //    {
-    //        (0, 0), (1, 0), (2, 0), (3, 0)
-    //    }).Build(),
-    //    builder.SetName("Slasher").SetSpread(new List<(int, int)>
-    //    {
-    //        (0, 0), (0, 1), (0, 2), (0, 3)
-    //    }).Build(),
-    //    builder.SetName("Cross").SetSpread(new List<(int, int)>
-    //    {
-    //        (0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)
-    //    }).Build()
-    //};
-    //    }
+        //    public List<IShot> DefineShots()
+        //    {
+        //        var builder = new ShotBuilder();
+        //
+        //        return new List<IShot>
+        //{
+        //    builder.SetName("Simple").SetSpread(new List<(int, int)> { (0, 0) }).Build(),
+        //    builder.SetName("Big").SetSpread(new List<(int, int)>
+        //    {
+        //        (0, 0), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)
+        //    }).Build(),
+        //    builder.SetName("Piercer").SetSpread(new List<(int, int)>
+        //    {
+        //        (0, 0), (1, 0), (2, 0), (3, 0)
+        //    }).Build(),
+        //    builder.SetName("Slasher").SetSpread(new List<(int, int)>
+        //    {
+        //        (0, 0), (0, 1), (0, 2), (0, 3)
+        //    }).Build(),
+        //    builder.SetName("Cross").SetSpread(new List<(int, int)>
+        //    {
+        //        (0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)
+        //    }).Build()
+        //};
+        //    }
 
         // Add new method to set team strategy
         public void SetTeamStrategy(string team, string strategy)
