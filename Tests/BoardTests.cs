@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Tests;
 
-public class UnitTest1
+public class BoardTests
 {
     private class TestBoard : Board
     {
