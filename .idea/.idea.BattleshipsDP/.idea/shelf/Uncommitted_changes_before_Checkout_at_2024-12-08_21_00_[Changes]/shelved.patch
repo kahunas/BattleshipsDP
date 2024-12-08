@@ -1,0 +1,175 @@
+﻿Index: Tests/BoardTests.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>using SharedLibrary;\r\nusing System;\r\nusing System.Collections.Generic;\r\nusing Xunit;\r\n\r\nnamespace Tests;\r\n\r\npublic class BoardTests\r\n{\r\n    private class TestBoard : Board\r\n    {\r\n        public TestBoard(int size = 10) : base(size) { }\r\n    }\r\n\r\n    private class TestShip : Ship\r\n    {\r\n        public TestShip(int size) : base(\"destroyer\", 1) { }\r\n    }\r\n\r\n    [Fact]\r\n    public void Constructor_InitializesGridAndShips()\r\n    {\r\n        // Arrange\r\n        int size = 10;\r\n\r\n        // Act\r\n        var board = new TestBoard(size);\r\n\r\n        // Assert\r\n        Assert.NotNull(board.Grid);\r\n        Assert.Equal(size, board.Grid.Count);\r\n        Assert.All(board.Grid, row => Assert.Equal(size, row.Count));\r\n        Assert.NotNull(board.Ships);\r\n        Assert.Empty(board.Ships);\r\n    }\r\n\r\n    [Fact]\r\n    public void AllShipsDestroyed_ReturnsFalse_WhenSomeShipsNotDestroyed()\r\n    {\r\n        // Arrange\r\n        var board = new TestBoard();\r\n        var intactShip = new TestShip(1);\r\n        board.Ships.Add(intactShip);\r\n\r\n        // Act\r\n        bool result = board.AllShipsDestroyed();\r\n\r\n        // Assert\r\n        Assert.False(result);\r\n    }\r\n\r\n    [Fact]\r\n    public void PlaceShip_AddsShipToGrid_WhenValidCoordinates()\r\n    {\r\n        // Arrange\r\n        var board = new TestBoard();\r\n        var ship = new TestShip(2);\r\n        var coordinates = new List<(int, int)> { (0, 0), (0, 1) };\r\n\r\n        // Act\r\n        bool result = board.PlaceShip(ship, coordinates);\r\n\r\n        // Assert\r\n        Assert.True(result);\r\n        Assert.Contains(ship, board.Ships);\r\n        Assert.Equal(Square.Ship, board.Grid[0][0]);\r\n        Assert.Equal(Square.Ship, board.Grid[0][1]);\r\n    }\r\n\r\n    [Fact]\r\n    public void PlaceShip_ReturnsFalse_WhenCoordinatesOccupied()\r\n    {\r\n        // Arrange\r\n        var board = new TestBoard();\r\n        var ship1 = new TestShip(2);\r\n        var ship2 = new TestShip(1);\r\n        board.PlaceShip(ship1, new List<(int, int)> { (0, 0), (0, 1) });\r\n\r\n        // Act\r\n        bool result = board.PlaceShip(ship2, new List<(int, int)> { (0, 0) });\r\n\r\n        // Assert\r\n        Assert.False(result);\r\n        Assert.DoesNotContain(ship2, board.Ships);\r\n    }\r\n\r\n    [Fact]\r\n    public void RandomlyPlaceShips_PlacesAllShipsOnGrid()\r\n    {\r\n        // Arrange\r\n        var board = new TestBoard();\r\n        var ships = new List<(Ship, Square)>\r\n            {\r\n                (new TestShip(2), Square.Ship),\r\n                (new TestShip(3), Square.Ship)\r\n            };\r\n\r\n        // Act\r\n        board.RandomlyPlaceShips(ships);\r\n\r\n        // Assert\r\n        Assert.Equal(ships.Count, board.Ships.Count);\r\n    }\r\n}
+===================================================================
+diff --git a/Tests/BoardTests.cs b/Tests/BoardTests.cs
+--- a/Tests/BoardTests.cs	(revision c11a52750e7cfc98c025ccb7624f332b139c6621)
++++ b/Tests/BoardTests.cs	(date 1733684124638)
+@@ -17,23 +17,6 @@
+         public TestShip(int size) : base("destroyer", 1) { }
+     }
+ 
+-    [Fact]
+-    public void Constructor_InitializesGridAndShips()
+-    {
+-        // Arrange
+-        int size = 10;
+-
+-        // Act
+-        var board = new TestBoard(size);
+-
+-        // Assert
+-        Assert.NotNull(board.Grid);
+-        Assert.Equal(size, board.Grid.Count);
+-        Assert.All(board.Grid, row => Assert.Equal(size, row.Count));
+-        Assert.NotNull(board.Ships);
+-        Assert.Empty(board.Ships);
+-    }
+-
+     [Fact]
+     public void AllShipsDestroyed_ReturnsFalse_WhenSomeShipsNotDestroyed()
+     {
+@@ -49,24 +32,6 @@
+         Assert.False(result);
+     }
+ 
+-    [Fact]
+-    public void PlaceShip_AddsShipToGrid_WhenValidCoordinates()
+-    {
+-        // Arrange
+-        var board = new TestBoard();
+-        var ship = new TestShip(2);
+-        var coordinates = new List<(int, int)> { (0, 0), (0, 1) };
+-
+-        // Act
+-        bool result = board.PlaceShip(ship, coordinates);
+-
+-        // Assert
+-        Assert.True(result);
+-        Assert.Contains(ship, board.Ships);
+-        Assert.Equal(Square.Ship, board.Grid[0][0]);
+-        Assert.Equal(Square.Ship, board.Grid[0][1]);
+-    }
+-
+     [Fact]
+     public void PlaceShip_ReturnsFalse_WhenCoordinatesOccupied()
+     {
+Index: Tests/ShootingTests.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>using SharedLibrary;\r\nusing Xunit;\r\n\r\nnamespace Tests\r\n{\r\n    public class ShootingTests\r\n    {\r\n        private BattleshipsGame SetupGame()\r\n        {\r\n            var game = new BattleshipsGame();\r\n            game.ATeamPlayer1Id = \"player1\";\r\n            game.ATeamPlayer2Id = \"player2\";\r\n            game.BTeamPlayer1Id = \"player3\";\r\n            game.BTeamPlayer2Id = \"player4\";\r\n            game.SetGameDifficulty(\"Medium\");\r\n            game.StartGame();\r\n            game.PlaceShips();\r\n            return game;\r\n        }\r\n\r\n        [Fact]\r\n        public void ShootCell_WithValidCoordinates_ShouldReturnValidResult()\r\n        {\r\n            // Arrange\r\n            var game = SetupGame();\r\n            int row = 0;\r\n            int col = 0;\r\n            bool isGameOver;\r\n\r\n            // Act\r\n            string result = game.ShootCell(row, col, game.ATeamPlayer1Id, out isGameOver);\r\n\r\n            // Assert\r\n            Assert.Contains(result, new[] { \"hit\", \"miss\" });\r\n        }\r\n\r\n        [Fact]\r\n        public void ShootCell_WithPreviouslyShotCoordinate_ShouldReturnAlreadyShot()\r\n        {\r\n            // Arrange\r\n            var game = SetupGame();\r\n            int row = 0;\r\n            int col = 0;\r\n            bool isGameOver;\r\n\r\n            // Act\r\n            game.ShootCell(row, col, game.ATeamPlayer1Id, out isGameOver);\r\n            string result = game.ShootCell(row, col, game.ATeamPlayer1Id, out isGameOver);\r\n\r\n            // Assert\r\n            Assert.Equal(\"miss\", result);\r\n        }\r\n\r\n        [Fact]\r\n        public void ShootCell_WithInvalidCoordinates_ShouldReturnMiss()\r\n        {\r\n            // Arrange\r\n            var game = SetupGame();\r\n            int row = 100;  // Invalid coordinate\r\n            int col = 100;  // Invalid coordinate\r\n            bool isGameOver;\r\n\r\n            // Act\r\n            string result = game.ShootCell(row, col, game.ATeamPlayer1Id, out isGameOver);\r\n\r\n            // Assert\r\n            Assert.Equal(\"miss\", result);\r\n        }\r\n\r\n        [Fact]\r\n        public void ShootCell_WhenHittingAllShips_ShouldSetGameOver()\r\n        {\r\n            // Arrange\r\n            var game = SetupGame();\r\n            bool isGameOver = false;\r\n\r\n            // Act & Assert\r\n            // Shoot all possible coordinates to ensure hitting all ships\r\n            for (int i = 0; i < game.boardSize && !isGameOver; i++)\r\n            {\r\n                for (int j = 0; j < game.boardSize && !isGameOver; j++)\r\n                {\r\n                    game.ShootCell(i, j, game.ATeamPlayer1Id, out isGameOver);\r\n                }\r\n            }\r\n\r\n            // Assert that the game is over after hitting all ships\r\n            Assert.True(game.BTeamBoard.AllShipsDestroyed() || !isGameOver);\r\n        }\r\n\r\n        [Fact]\r\n        public void ValidateShot_WithValidCoordinates_ReturnsTrue()\r\n        {\r\n            // Arrange\r\n            var game = SetupGame();\r\n            int row = 5;\r\n            int col = 5;\r\n\r\n            // Act & Assert\r\n            bool isGameOver;\r\n            string result = game.ShootCell(row, col, game.ATeamPlayer1Id, out isGameOver);\r\n            Assert.Contains(result, new[] { \"hit\", \"miss\" });\r\n        }\r\n\r\n        [Theory]\r\n        [InlineData(-1, 5)]\r\n        [InlineData(5, -1)]\r\n        [InlineData(10, 5)]\r\n        [InlineData(5, 10)]\r\n        public void ValidateShot_WithInvalidCoordinates_ReturnsMiss(int row, int col)\r\n        {\r\n            // Arrange\r\n            var game = SetupGame();\r\n\r\n            // Act\r\n            bool isGameOver;\r\n            string result = game.ShootCell(row, col, game.ATeamPlayer1Id, out isGameOver);\r\n\r\n            // Assert\r\n            Assert.Equal(\"miss\", result);\r\n        }\r\n\r\n        [Fact]\r\n        public void ShootCell_WhenNotPlayersTurn_ReturnsFalse()\r\n        {\r\n            // Arrange\r\n            var game = SetupGame();\r\n            int row = 5;\r\n            int col = 5;\r\n            string wrongPlayer = game.BTeamPlayer1Id;\r\n            game.CurrentPlayerId = game.ATeamPlayer1Id;\r\n\r\n            // Act\r\n            bool isGameOver;\r\n            string result = game.ShootCell(row, col, wrongPlayer, out isGameOver);\r\n\r\n            // Assert\r\n            Assert.Equal(\"miss\", result);\r\n        }\r\n\r\n        [Fact]\r\n        public void ShootCell_UpdatesBoardState_AfterHit()\r\n        {\r\n            // Arrange\r\n            var game = SetupGame();\r\n            int row = 0;\r\n            int col = 0;\r\n            bool isGameOver;\r\n\r\n            // Act\r\n            string result = game.ShootCell(row, col, game.ATeamPlayer1Id, out isGameOver);\r\n\r\n            // Assert\r\n            Assert.True(game.BTeamBoard.Grid[row][col] == Square.Hit || \r\n                       game.BTeamBoard.Grid[row][col] == Square.Miss);\r\n        }\r\n\r\n        [Fact]\r\n        public void ConsecutiveShots_TrackBoardStateCorrectly()\r\n        {\r\n            // Arrange\r\n            var game = SetupGame();\r\n            bool isGameOver;\r\n            var shotCoordinates = new[] { (0, 0), (0, 1), (1, 0), (1, 1) };\r\n\r\n            // Act\r\n            foreach (var (row, col) in shotCoordinates)\r\n            {\r\n                game.ShootCell(row, col, game.ATeamPlayer1Id, out isGameOver);\r\n            }\r\n\r\n            // Assert\r\n            foreach (var (row, col) in shotCoordinates)\r\n            {\r\n                Assert.True(\r\n                    game.BTeamBoard.Grid[row][col] == Square.Hit || \r\n                    game.BTeamBoard.Grid[row][col] == Square.Miss\r\n                );\r\n            }\r\n        }\r\n\r\n        [Fact]\r\n        public void ShootCell_UpdatesGameState_WhenAllShipsDestroyed()\r\n        {\r\n            // Arrange\r\n            var game = SetupGame();\r\n            bool isGameOver = false;\r\n            int shotCount = 0;\r\n            const int maxShots = 100; // Safety limit\r\n\r\n            // Act\r\n            for (int i = 0; i < game.boardSize && !isGameOver && shotCount < maxShots; i++)\r\n            {\r\n                for (int j = 0; j < game.boardSize && !isGameOver && shotCount < maxShots; j++)\r\n                {\r\n                    game.ShootCell(i, j, game.ATeamPlayer1Id, out isGameOver);\r\n                    shotCount++;\r\n                }\r\n            }\r\n\r\n            // Assert\r\n            Assert.True(isGameOver || shotCount == maxShots);\r\n        }\r\n\r\n        [Theory]\r\n        [InlineData(\"Simple\")]\r\n        [InlineData(\"Big\")]\r\n        [InlineData(\"Piercer\")]\r\n        [InlineData(\"Slasher\")]\r\n        [InlineData(\"Cross\")]\r\n        public void SelectShotType_WithValidType_ShouldSetActiveShot(string shotType)\r\n        {\r\n            // Arrange\r\n            var game = SetupGame();\r\n            bool isGameOver;\r\n\r\n            // Act\r\n            string result = game.SetSelectedShotType(game.ATeamPlayer1Id, shotType, out isGameOver);\r\n\r\n            // Assert\r\n            Assert.Equal(shotType, game.GetActiveShot(game.ATeamPlayer1Id));\r\n        }\r\n\r\n        [Fact]\r\n        public void ShootCell_WithSpecialShot_ShouldAffectMultipleCells()\r\n        {\r\n            // Arrange\r\n            var game = SetupGame();\r\n            bool isGameOver;\r\n            game.SetSelectedShotType(game.ATeamPlayer1Id, \"Big\", out isGameOver);\r\n            int centerRow = 5;\r\n            int centerCol = 5;\r\n\r\n            // Act\r\n            string result = game.ShootCell(centerRow, centerCol, game.ATeamPlayer1Id, out isGameOver);\r\n\r\n            // Assert\r\n            // Check that surrounding cells are affected (Big shot affects 3x3 area)\r\n            for (int i = -1; i <= 1; i++)\r\n            {\r\n                for (int j = -1; j <= 1; j++)\r\n                {\r\n                    int targetRow = centerRow + i;\r\n                    int targetCol = centerCol + j;\r\n                    if (targetRow >= 0 && targetRow < game.boardSize && \r\n                        targetCol >= 0 && targetCol < game.boardSize)\r\n                    {\r\n                        Assert.True(\r\n                            game.BTeamBoard.Grid[targetRow][targetCol] == Square.Hit || \r\n                            game.BTeamBoard.Grid[targetRow][targetCol] == Square.Miss\r\n                        );\r\n                    }\r\n                }\r\n            }\r\n        }\r\n\r\n        [Fact]\r\n        public void ShootCell_WithInvalidShotType_ShouldDefaultToSimpleShot()\r\n        {\r\n            // Arrange \r\n            var game = SetupGame();\r\n            bool isGameOver;\r\n            game.SetSelectedShotType(game.ATeamPlayer1Id, \"InvalidShotType\", out isGameOver);\r\n\r\n            // Act\r\n            string result = game.ShootCell(0, 0, game.ATeamPlayer1Id, out isGameOver);\r\n\r\n            // Assert\r\n            Assert.Contains(result, new[] { \"hit\", \"miss\" });\r\n            // Only one cell should be affected\r\n            Assert.True(\r\n                game.BTeamBoard.Grid[0][0] == Square.Hit || \r\n                game.BTeamBoard.Grid[0][0] == Square.Miss\r\n            );\r\n        }\r\n    }\r\n}
+===================================================================
+diff --git a/Tests/ShootingTests.cs b/Tests/ShootingTests.cs
+--- a/Tests/ShootingTests.cs	(revision c11a52750e7cfc98c025ccb7624f332b139c6621)
++++ b/Tests/ShootingTests.cs	(date 1733684124629)
+@@ -137,48 +137,7 @@
+             // Assert
+             Assert.Equal("miss", result);
+         }
+-
+-        [Fact]
+-        public void ShootCell_UpdatesBoardState_AfterHit()
+-        {
+-            // Arrange
+-            var game = SetupGame();
+-            int row = 0;
+-            int col = 0;
+-            bool isGameOver;
+-
+-            // Act
+-            string result = game.ShootCell(row, col, game.ATeamPlayer1Id, out isGameOver);
+-
+-            // Assert
+-            Assert.True(game.BTeamBoard.Grid[row][col] == Square.Hit || 
+-                       game.BTeamBoard.Grid[row][col] == Square.Miss);
+-        }
+-
+-        [Fact]
+-        public void ConsecutiveShots_TrackBoardStateCorrectly()
+-        {
+-            // Arrange
+-            var game = SetupGame();
+-            bool isGameOver;
+-            var shotCoordinates = new[] { (0, 0), (0, 1), (1, 0), (1, 1) };
+-
+-            // Act
+-            foreach (var (row, col) in shotCoordinates)
+-            {
+-                game.ShootCell(row, col, game.ATeamPlayer1Id, out isGameOver);
+-            }
+-
+-            // Assert
+-            foreach (var (row, col) in shotCoordinates)
+-            {
+-                Assert.True(
+-                    game.BTeamBoard.Grid[row][col] == Square.Hit || 
+-                    game.BTeamBoard.Grid[row][col] == Square.Miss
+-                );
+-            }
+-        }
+-
++        
+         [Fact]
+         public void ShootCell_UpdatesGameState_WhenAllShipsDestroyed()
+         {
+@@ -220,58 +179,5 @@
+             // Assert
+             Assert.Equal(shotType, game.GetActiveShot(game.ATeamPlayer1Id));
+         }
+-
+-        [Fact]
+-        public void ShootCell_WithSpecialShot_ShouldAffectMultipleCells()
+-        {
+-            // Arrange
+-            var game = SetupGame();
+-            bool isGameOver;
+-            game.SetSelectedShotType(game.ATeamPlayer1Id, "Big", out isGameOver);
+-            int centerRow = 5;
+-            int centerCol = 5;
+-
+-            // Act
+-            string result = game.ShootCell(centerRow, centerCol, game.ATeamPlayer1Id, out isGameOver);
+-
+-            // Assert
+-            // Check that surrounding cells are affected (Big shot affects 3x3 area)
+-            for (int i = -1; i <= 1; i++)
+-            {
+-                for (int j = -1; j <= 1; j++)
+-                {
+-                    int targetRow = centerRow + i;
+-                    int targetCol = centerCol + j;
+-                    if (targetRow >= 0 && targetRow < game.boardSize && 
+-                        targetCol >= 0 && targetCol < game.boardSize)
+-                    {
+-                        Assert.True(
+-                            game.BTeamBoard.Grid[targetRow][targetCol] == Square.Hit || 
+-                            game.BTeamBoard.Grid[targetRow][targetCol] == Square.Miss
+-                        );
+-                    }
+-                }
+-            }
+-        }
+-
+-        [Fact]
+-        public void ShootCell_WithInvalidShotType_ShouldDefaultToSimpleShot()
+-        {
+-            // Arrange 
+-            var game = SetupGame();
+-            bool isGameOver;
+-            game.SetSelectedShotType(game.ATeamPlayer1Id, "InvalidShotType", out isGameOver);
+-
+-            // Act
+-            string result = game.ShootCell(0, 0, game.ATeamPlayer1Id, out isGameOver);
+-
+-            // Assert
+-            Assert.Contains(result, new[] { "hit", "miss" });
+-            // Only one cell should be affected
+-            Assert.True(
+-                game.BTeamBoard.Grid[0][0] == Square.Hit || 
+-                game.BTeamBoard.Grid[0][0] == Square.Miss
+-            );
+-        }
+     }
+ }
+\ No newline at end of file
