@@ -12,10 +12,8 @@ namespace SharedLibrary.Strategies
                 while (!placed)
                 {
                     bool isHorizontal = random.Next(0, 2) == 0;
-                    // Adjust random range to account for ship size and board boundaries
-                    int maxPos = board.Size - shipType.Item1.Size;
-                    int row = random.Next(0, board.Size);
-                    int col = random.Next(0, board.Size);
+                    int row = random.Next(1, board.Size - 2);  // Leave space around edges
+                    int col = random.Next(1, board.Size - 2);
                     placed = TryPlaceShipWithSpacing(board, shipType.Item1, row, col, isHorizontal);
                 }
             }
@@ -26,46 +24,42 @@ namespace SharedLibrary.Strategies
             List<(int, int)> coordinates = new List<(int, int)>();
             List<(int, int)> spacingCheck = new List<(int, int)>();
 
-            // First, check if the ship would fit within the board boundaries
+            // Check ship coordinates
             for (int i = 0; i < ship.Size; i++)
             {
                 int row = isHorizontal ? startRow : startRow + i;
                 int col = isHorizontal ? startCol + i : startCol;
 
-                if (row >= board.Size || col >= board.Size)
+                if (row >= board.Size - 1 || col >= board.Size - 1 || board.Grid[row, col] != Square.Empty)
                 {
                     return false;
                 }
 
                 coordinates.Add((row, col));
-
-                // Check surrounding cells for spacing
+                
+                // Add surrounding coordinates to check for spacing
                 for (int dr = -1; dr <= 1; dr++)
                 {
                     for (int dc = -1; dc <= 1; dc++)
                     {
-                        int checkRow = row + dr;
-                        int checkCol = col + dc;
-
-                        if (checkRow >= 0 && checkRow < board.Size && 
-                            checkCol >= 0 && checkCol < board.Size)
+                        if (row + dr >= 0 && row + dr < board.Size && 
+                            col + dc >= 0 && col + dc < board.Size)
                         {
-                            spacingCheck.Add((checkRow, checkCol));
+                            spacingCheck.Add((row + dr, col + dc));
                         }
                     }
                 }
             }
 
-            // Check if any of the spacing cells are occupied
+            // Check if there's enough spacing around the ship
             foreach (var pos in spacingCheck)
             {
-                if (board.Grid[pos.Item1][pos.Item2] != Square.Empty)
+                if (board.Grid[pos.Item1, pos.Item2] != Square.Empty)
                 {
                     return false;
                 }
             }
 
-            // All checks passed, place the ship
             return board.PlaceShip(ship, coordinates);
         }
     }

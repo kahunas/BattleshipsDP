@@ -11,6 +11,7 @@ namespace SharedLibrary.Strategies
                 bool placed = false;
                 while (!placed)
                 {
+                    // Try to place along edges
                     int edge = random.Next(4); // 0: top, 1: right, 2: bottom, 3: left
                     placed = edge switch
                     {
@@ -33,7 +34,7 @@ namespace SharedLibrary.Strategies
                 int row = isHorizontal ? startRow : startRow + i;
                 int col = isHorizontal ? startCol + i : startCol;
 
-                if (row >= board.Size || col >= board.Size || board.Grid[row][col] != Square.Empty)
+                if (row >= board.Size || col >= board.Size || board.Grid[row, col] != Square.Empty)
                 {
                     return false;
                 }
