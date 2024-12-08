@@ -34,6 +34,7 @@ namespace SharedLibrary
         private LevelFactory _levelFactory { get; set; }
 
         private List<ITurnObserver> turnObservers = new List<ITurnObserver>();
+        private TurnHandler _turnHandler;
         private Dictionary<string, IShipPlacementStrategy> placementStrategies;
         private string teamAStrategy = "Random";
         private string teamBStrategy = "Random";
@@ -61,6 +62,8 @@ namespace SharedLibrary
                 { "Edge", new EdgePlacementStrategy() },
                 { "Spaced", new SpacedPlacementStrategy() }
             };
+
+            _turnHandler = new BattleshipsTurnHandler(this);
         }
 
         public void SetGameDifficulty(string difficulty)
@@ -115,8 +118,7 @@ namespace SharedLibrary
             // Set the first player to start the game
             CurrentPlayerId = ATeamPlayer1Id;
 
-            // Notify observers about the first turn
-            NotifyTurnObservers();
+            _turnHandler.ExecuteTurn(CurrentPlayerId, -1, -1, "");
         }
 
         public void PlaceShips()
@@ -169,58 +171,20 @@ namespace SharedLibrary
             BTeamPlayer2Id = players[3].ConnectionId;
         }
 
-        public void UpdateTurn()
+        public void ExecuteTurn(string playerId, int row, int col, string shotType)
         {
-            // Determine the current player and switch to the next one
-            if (CurrentPlayerId == ATeamPlayer1Id)
-            {
-                CurrentPlayerId = ATeamPlayer2Id;
-            }
-            else if (CurrentPlayerId == ATeamPlayer2Id)
-            {
-                CurrentPlayerId = BTeamPlayer1Id;
-            }
-            else if (CurrentPlayerId == BTeamPlayer1Id)
-            {
-                CurrentPlayerId = BTeamPlayer2Id;
-            }
-            else if (CurrentPlayerId == BTeamPlayer2Id)
-            {
-                CurrentPlayerId = ATeamPlayer1Id;
-            }
-
-            Console.WriteLine($"It is now {CurrentPlayerId}'s turn.");
-
-
-            // Notify all observers that the turn has changed
-            NotifyTurnObservers();
+            _turnHandler.ExecuteTurn(playerId, row, col, shotType);
         }
 
-        //~~~ Observer ~~~
         public void RegisterTurnObserver(ITurnObserver observer)
         {
-            if (!turnObservers.Contains(observer))
-            {
-                turnObservers.Add(observer);
-            }
+            _turnHandler.RegisterObserver(observer);
         }
 
         public void UnregisterTurnObserver(ITurnObserver observer)
         {
-            if (turnObservers.Contains(observer))
-            {
-                turnObservers.Remove(observer);
-            }
+            _turnHandler.UnregisterObserver(observer);
         }
-
-        private void NotifyTurnObservers()
-        {
-            foreach (var observer in turnObservers)
-            {
-                observer.UpdateTurn(CurrentPlayerId);
-            }
-        }
-        //~~~ Observer ~~~
 
         public string GetTeamByPlayer(string connectionId)
         {
@@ -280,21 +244,6 @@ namespace SharedLibrary
             }
 
             return result;
-        }
-
-        public void PrintTeams()
-        {
-            Console.WriteLine("Team A:");
-            foreach (var player in ATeam.Players)
-            {
-                Console.WriteLine($"Player ID: {player.ConnectionId}, Name: {player.Name}");
-            }
-
-            Console.WriteLine("Team B:");
-            foreach (var player in BTeam.Players)
-            {
-                Console.WriteLine($"Player ID: {player.ConnectionId}, Name: {player.Name}");
-            }
         }
 
         //    public List<IShot> DefineShots()
