@@ -234,7 +234,8 @@ namespace BattleshipsDP.Hubs
             if (shot == null || !shotmade)
             {
                 await Clients.Client(connectionId).SendAsync("InvalidShotType");
-                room.Game.UpdateTurn();
+                room.Game.UpdateState();
+                //room.Game.UpdateTurn();
                 return;
             }
             if (shotmade)
@@ -263,13 +264,15 @@ namespace BattleshipsDP.Hubs
                     {
                         await Clients.Group(room.RoomId).SendAsync("ReceiveGameOver", $"{room.Game.GetTeamByPlayer(connectionId)} wins!");
                         room.Game.GameOver = true;
+                        room.Game.UpdateState();
                         break;
                     }
                 }
 
                 if (!isGameOver)
                 {
-                    room.Game.UpdateTurn();
+                    //room.Game.UpdateTurn();
+                    room.Game.UpdateState();
                 }
             }
         }
@@ -377,11 +380,12 @@ namespace BattleshipsDP.Hubs
                 if (room.Players.All(p => p.IsReadyForBattle))
                 {
                     // Initialize the game and teams
-                    room.Game.StartGame();
-                    
+                    //room.Game.StartGame();
+
                     // Place ships using the selected strategies
-                    room.Game.PlaceShips();
-                    room.Game.CountShots();
+                    //room.Game.PlaceShips();
+                    //room.Game.CountShots();
+                    room.Game.PrepareForBattle();
                     
 
                     // Send initial board states to all players

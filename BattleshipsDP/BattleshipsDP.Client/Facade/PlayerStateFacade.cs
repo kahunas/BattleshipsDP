@@ -2,7 +2,7 @@
 using SharedLibrary;
 using Microsoft.AspNetCore.Components;
 
-namespace BattleshipsDP.Client
+namespace BattleshipsDP.Client.Facade
 {
     public class PlayerStateFacade
     {

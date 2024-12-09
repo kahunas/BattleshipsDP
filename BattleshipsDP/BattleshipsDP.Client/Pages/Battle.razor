@@ -1,8 +1,10 @@
 ﻿@page "/battle"
+@using BattleshipsDP.Client.Interpreter
 
 @inject PlayerState PlayerState
 @inject NavigationManager Navigation
 @rendermode @(new InteractiveWebAssemblyRenderMode(false))
+@inject IJSRuntime JSRuntime
 
 @if (PlayerState.HubConnection is not null)
 {
@@ -105,7 +107,7 @@
                     <option value="Slasher" disabled="@(!IsSlasherAvailable)">Slasher shot(@SlasherAmount)</option>
                     <option value="Cross" disabled="@(!IsCrossAvailable)">Cross shot (@CrossAmount)</option>
                 </select>
-                <button @onclick="ShootAtOpponentBoard" disabled="@(!isPlayerTurn)">Fire</button>
+                <button id="fireButton" @onclick="ShootAtOpponentBoard" disabled="@(!isPlayerTurn)">Fire</button>
             </div>
         }
 
@@ -166,7 +168,6 @@
         </div>
     }
 }
-
 @code {
     private int boardSize; // Initialize to a default, can be modified based on user input
 
@@ -191,6 +192,7 @@
     private int? PiercerAmount = null;
     private int? SlasherAmount = null;
     private int? CrossAmount = null;
+    private KeyPressInterpreter _keyPressInterpreter;
 
     private List<List<GridCell>> TeamCells = new List<List<GridCell>>();
     private List<List<GridCell>> EnemyCells = new List<List<GridCell>>();
@@ -298,6 +300,10 @@
                 battleStarted = true;
                 StateHasChanged();
             });
+
+            _keyPressInterpreter = new KeyPressInterpreter(JSRuntime);
+            _keyPressInterpreter.OnSpacebarPressed += ShootAtOpponentBoard;
+            await _keyPressInterpreter.InitializeAsync();
         }
     }
 
@@ -349,46 +355,31 @@
         StateHasChanged();
     }
 
-    private async Task ShootAtOpponentBoard()
+private async Task ShootAtOpponentBoard()
+{
+    if (!isPlayerTurn) return;
+
+    if (selectedRow.HasValue && selectedCol.HasValue && selectedShot != null)
     {
-        if (!isPlayerTurn) return;
-
-        if (selectedRow.HasValue && selectedCol.HasValue && selectedShot != null)
+        if (IsHubConnectionActive())
         {
-            if (IsHubConnectionActive())
-            {
-                //var shotBuilder = new ShotBuilder()
-                //    .SetName(selectedShot)
-                //    .SetSpread(new List<(int, int)> { (0, 0) });
-                //
-                //IShot shot = shotBuilder.Build();
-                //
-                //if (selectedShot == "Slasher")
-                //{
-                //    shot = new SplashDamageDecorator(shot, splashRadius: 1);
-                //}
-                //
-                //var shotCoordinates = shot.ShotCoordinates(selectedRow.Value, selectedCol.Value);
-                //
-                //foreach (var (x, y) in shotCoordinates)
-                //{
-                //    if (x >= 0 && y >= 0 && x < EnemyCells.Count && y < EnemyCells[x].Count)
-                //    {
-                //        var shotCommand = new ShotCommand(x, y, selectedShot, true);
-                //        CommandInvoker.ExecuteCommand(shotCommand, EnemyCells);
-                //    }
-                //}
-
-                await PlayerState.HubConnection.SendAsync("ShootAtOpponent", selectedRow.Value, selectedCol.Value, selectedShot);
-
-                isPlayerTurn = false;
-            }
-        }
-        else
-        {
-            Console.WriteLine("No cell selected to shoot at.");
+            await PlayerState.HubConnection.SendAsync("ShootAtOpponent", selectedRow.Value, selectedCol.Value, selectedShot);
+            isPlayerTurn = false;
         }
     }
+    else
+    {
+        Console.WriteLine("No cell selected to shoot at.");
+    }
+}
+
+public async ValueTask DisposeAsync()
+{
+    if (_keyPressInterpreter != null)
+    {
+        await _keyPressInterpreter.DisposeAsync();
+    }
+}
 
     private async Task HandleShootResult(int row, int col, string result)
     {

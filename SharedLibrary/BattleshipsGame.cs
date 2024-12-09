@@ -6,12 +6,14 @@ using System.Text;
 using System.Threading.Tasks;
 using SharedLibrary.Builder;
 using SharedLibrary.Factory;
+using SharedLibrary.State;
 using SharedLibrary.Strategies;
 
 namespace SharedLibrary
 {
     public class BattleshipsGame
     {
+        public GameContext GameContext { get; private set; }
         //--- TEAM A
         public string ATeamPlayer1Id { get; set; } //Host
         public string ATeamPlayer2Id { get; set; }
@@ -49,6 +51,7 @@ namespace SharedLibrary
 
         public BattleshipsGame()
         {
+            GameContext = new GameContext();
             ATeamPlayer1Id = string.Empty;
             ATeamPlayer2Id = string.Empty;
             BTeamPlayer1Id = string.Empty;
@@ -84,9 +87,9 @@ namespace SharedLibrary
         public void StartGame()
         {
             Console.WriteLine("Game started");
-
-            GameStarted = true;
-            GameOver = false;
+            //GameContext.SetState(new SetupState(), this);
+            //GameStarted = true;
+            //GameOver = false;
 
             //define player prototypes
             var prototypePlayerA1 = new Player(ATeamPlayer1Id, "Player 1");
@@ -105,8 +108,9 @@ namespace SharedLibrary
                 (Player)prototypePlayerB2.Clone()
             });
 
-            ATeamBoard = _levelFactory.GetBoard();
-            BTeamBoard = _levelFactory.GetBoard();
+            //ATeamBoard = _levelFactory.GetBoard();
+            //BTeamBoard = _levelFactory.GetBoard();
+            GameContext.SetState(new SetupState(), this);
 
             boardSize = ATeamBoard.Size;
             //ATeamBoard = ATeam.Board;
@@ -114,9 +118,14 @@ namespace SharedLibrary
 
             // Set the first player to start the game
             CurrentPlayerId = ATeamPlayer1Id;
-
+            //GameContext.Update(this);
             // Notify observers about the first turn
             NotifyTurnObservers();
+        }
+
+        public void PrepareForBattle()
+        {
+            GameContext.Update(this);
         }
 
         public void PlaceShips()
@@ -142,6 +151,7 @@ namespace SharedLibrary
                     BTeam.AddShots(shot.GetType(), shot);
                 }
             }
+            //GameContext.Update(this);
         }
 
         public void DividePlayersIntoTeams(List<Player> players)
@@ -191,7 +201,7 @@ namespace SharedLibrary
 
             Console.WriteLine($"It is now {CurrentPlayerId}'s turn.");
 
-
+            //GameContext.Update(this);
             // Notify all observers that the turn has changed
             NotifyTurnObservers();
         }
@@ -232,28 +242,29 @@ namespace SharedLibrary
             return GetTeamByPlayer(connectionId) == "Team A" ? ATeam.Players : BTeam.Players;
         }
 
+        public string shotResult = null;
         public string ShootCell(int row, int col, string connectionId, out bool isGameOver)
         {
             isGameOver = false;
-
+            shotResult = null;
             // Determine the attacking and defending teams
             string attackingTeam = GetTeamByPlayer(connectionId);
             var opponentBoard = attackingTeam == "Team A" ? BTeamBoard : ATeamBoard;
 
             // Determine if it's a hit or miss
-            string result = null;
+            
             if (boardSize > row && boardSize > col)
             {
                 // Check if cell has already been shot
                 if (opponentBoard.Grid[row][col] == Square.Hit || opponentBoard.Grid[row][col] == Square.Miss)
                 {
-                    result = "already_shot";
+                    shotResult = "already_shot";
                 }
 
                 if (opponentBoard.Grid[row][col] == Square.Ship)
                 {
                     opponentBoard.Grid[row][col] = Square.Hit;
-                    result = "hit";
+                    shotResult = "hit";
 
                     foreach (var ship in opponentBoard.Ships)
                     {
@@ -271,15 +282,20 @@ namespace SharedLibrary
                 else
                 {
                     opponentBoard.Grid[row][col] = Square.Miss;
-                    result = "miss";
+                    shotResult = "miss";
                 }
             }
             else
             {
-                result = "miss";
+                shotResult = "miss";
             }
+            
+            return shotResult;
+        }
 
-            return result;
+        public void UpdateState()
+        {
+            GameContext.Update(this);
         }
 
         public void PrintTeams()
@@ -333,6 +349,11 @@ namespace SharedLibrary
                 else if (team == "Team B")
                     teamBStrategy = strategy;
             }
+        }
+
+        public LevelFactory GetLevelFactory()
+        {
+            return this._levelFactory;
         }
     }
 }

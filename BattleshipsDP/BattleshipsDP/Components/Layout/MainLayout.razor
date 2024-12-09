@@ -11,3 +11,24 @@
     <a href="" class="reload">Reload</a>
     <a class="dismiss">🗙</a>
 </div>
+
+<script>
+    window.addSpacebarListener = (dotNetHelper) => {
+        const handleSpacebar = (event) => {
+            if (event.code === "Space") {
+                event.preventDefault();
+                dotNetHelper.invokeMethodAsync("TriggerSpacebar");
+            }
+        };
+
+        document.addEventListener("keydown", handleSpacebar);
+        window.spacebarHandler = handleSpacebar;
+    };
+
+    window.removeSpacebarListener = () => {
+        if (window.spacebarHandler) {
+            document.removeEventListener("keydown", window.spacebarHandler);
+            window.spacebarHandler = null;
+        }
+    };
+</script>
