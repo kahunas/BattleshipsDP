@@ -33,6 +33,7 @@ public abstract class TurnHandler
     }
 
     // These are the steps that can vary between implementations
+    // These methods are abstract and must be implemented by the concrete classes | subclasses
     protected abstract bool ValidatePlayerTurn(string playerId);
     protected abstract bool ValidateShot(int row, int col, string shotType);
     protected abstract void ProcessShot(int row, int col, string shotType, string playerId);
