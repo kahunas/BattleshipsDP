@@ -234,7 +234,7 @@ namespace BattleshipsDP.Hubs
             if (shot == null || !shotmade)
             {
                 await Clients.Client(connectionId).SendAsync("InvalidShotType");
-                room.Game.UpdateTurn();
+                room.Game.ExecuteTurn(connectionId, row, col, type);
                 return;
             }
             if (shotmade)
@@ -269,7 +269,7 @@ namespace BattleshipsDP.Hubs
 
                 if (!isGameOver)
                 {
-                    room.Game.UpdateTurn();
+                    room.Game.ExecuteTurn(connectionId, row, col, type);
                 }
             }
         }

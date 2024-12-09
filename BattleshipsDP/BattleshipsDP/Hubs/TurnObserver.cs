@@ -22,7 +22,6 @@ namespace BattleshipsDP.Hubs
                 {
                     await _clients.Client(_connectionId).SendAsync("YourTurn");
                 }
-                Console.WriteLine($"Notifying {_connectionId} of their turn."); // Test
             }
             catch (Exception ex)
             {
