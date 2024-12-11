@@ -157,6 +157,70 @@
                 }
             </ul>
         </div>
+
+        <!-- Replace the ship counts section -->
+        <div>
+            <select @bind="selectedInfoType">
+                <option value="">Select Information</option>
+                <option value="navy">Entire Navy</option>
+                <optgroup label="Ship Categories">
+                    <option value="destroyers">Destroyers</option>
+                    <option value="submarines">Submarines</option>
+                    <option value="battleships">Battleships</option>
+                    <option value="carriers">Carriers</option>
+                </optgroup>
+                <optgroup label="Individual Ships">
+                    @if (shipCounts != null)
+                    {
+                        @foreach (var shipType in shipCounts)
+                        {
+                            @for (int i = 1; i <= shipType.Value; i++)
+                            {
+                                <option value="@($"{shipType.Key.ToLower()}-{i}")">@shipType.Key #@i</option>
+                            }
+                        }
+                    }
+                </optgroup>
+            </select>
+            <button @onclick="ToggleInfoDisplay">
+                @(showInfo ? "Hide Information" : "Show Information")
+            </button>
+            @if (showInfo && !string.IsNullOrEmpty(selectedInfoType))
+            {
+                <div class="ship-counts">
+                    <h4>Team @PlayerTeam Ships:</h4>
+                    @if (shipCounts != null)
+                    {
+                        @if (selectedInfoType == "navy")
+                        {
+                            @foreach (var count in shipCounts)
+                            {
+                                <p>@count.Key: @count.Value</p>
+                            }
+                        }
+                        else if (selectedInfoType.Contains("-"))
+                        {
+                            var parts = selectedInfoType.Split('-');
+                            var shipType = parts[0];
+                            var shipNumber = parts[1];
+                            var ship = shipCounts.FirstOrDefault(s => s.Key.ToLower() == shipType);
+                            if (ship.Key != null)
+                            {
+                                <p>@ship.Key #@shipNumber Status: Active</p>
+                            }
+                        }
+                        else
+                        {
+                            var filteredShips = shipCounts.Where(s => s.Key.ToLower().Contains(selectedInfoType.TrimEnd('s')));
+                            foreach (var ship in filteredShips)
+                            {
+                                <p>@ship.Key: @ship.Value</p>
+                            }
+                        }
+                    }
+                </div>
+            }
+        </div>
     </div>
 
     @if (!string.IsNullOrEmpty(gameOverMessage))
@@ -196,6 +260,23 @@
     private List<List<GridCell>> EnemyCells = new List<List<GridCell>>();
 
     private CommandInvoker CommandInvoker = new CommandInvoker();
+
+    // Replace the showShipCounts field with this
+    private string selectedInfoType = "";
+
+    // Add these new fields
+    private Dictionary<string, int> shipCounts;
+    private bool showInfo = false;
+
+    private async Task ToggleInfoDisplay()
+    {
+        if (!showInfo)
+        {
+            shipCounts = await PlayerState.HubConnection.InvokeAsync<Dictionary<string, int>>("GetShipCounts", PlayerState.HubConnection.ConnectionId);
+        }
+        showInfo = !showInfo;
+        StateHasChanged();
+    }
 
     protected override async Task OnInitializedAsync()
     {

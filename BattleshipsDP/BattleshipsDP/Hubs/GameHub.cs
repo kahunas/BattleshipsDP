@@ -400,5 +400,15 @@ namespace BattleshipsDP.Hubs
                 }
             }
         }
+
+        public Dictionary<string, int> GetShipCounts(string connectionId)
+        {
+            var room = _gameService.GetRoomByPlayerId(connectionId);
+            var team = room.Game.GetTeamByPlayer(connectionId);
+            var ships = team == "Team A" ? room.Game.ATeamBoard.Ships : room.Game.BTeamBoard.Ships;
+
+            return ships.GroupBy(s => s.Name)
+                       .ToDictionary(g => g.Key, g => g.Count());
+        }
     }
 }
