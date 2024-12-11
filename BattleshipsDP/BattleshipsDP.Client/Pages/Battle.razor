@@ -4,6 +4,18 @@
 @inject NavigationManager Navigation
 @rendermode @(new InteractiveWebAssemblyRenderMode(false))
 
+<style>
+    .flash-ship {
+        animation: flashShip 1s infinite;
+    }
+
+    @@keyframes flashShip {
+        0% { background-color: #90EE90; }
+        50% { background-color: #32CD32; }
+        100% { background-color: #90EE90; }
+    }
+</style>
+
 @if (PlayerState.HubConnection is not null)
 {
     @if (!string.IsNullOrEmpty(WinnerTeam))
@@ -85,7 +97,8 @@
                         {
                             @foreach (var cell in row)
                             {
-                                <div style="width: 50px; height: 50px; border: 1px solid black; background-color: @(cell.GetCellBackground())">
+                                <div class="@(showInfo && cell.IsSelectedShip ? "flash-ship" : "")"
+                                     style="width: 50px; height: 50px; border: 1px solid black; background-color: @(cell.GetCellBackground())">
                                 </div>
                             }
                         }
@@ -160,7 +173,7 @@
 
         <!-- Replace the ship counts section -->
         <div>
-            <select @bind="selectedInfoType">
+            <select @bind="selectedInfoType" @bind:after="HighlightSelectedShips">
                 <option value="">Select Information</option>
                 <option value="navy">Entire Navy</option>
                 <optgroup label="Ship Categories">
@@ -265,17 +278,88 @@
     private string selectedInfoType = "";
 
     // Add these new fields
-    private Dictionary<string, int> shipCounts;
+    private Dictionary<string, int>? shipCounts;
     private bool showInfo = false;
 
     private async Task ToggleInfoDisplay()
     {
         if (!showInfo)
         {
-            shipCounts = await PlayerState.HubConnection.InvokeAsync<Dictionary<string, int>>("GetShipCounts", PlayerState.HubConnection.ConnectionId);
+            showInfo = true;
+            if (PlayerState.HubConnection != null)
+            {
+                shipCounts = await PlayerState.HubConnection.InvokeAsync<Dictionary<string, int>>("GetShipCounts", PlayerState.HubConnection.ConnectionId);
+                await HighlightSelectedShips(); // Only highlight when showing info
+            }
         }
-        showInfo = !showInfo;
+        else
+        {
+            showInfo = false;
+            // Reset all cells' IsSelectedShip property when hiding info
+            foreach (var row in TeamCells)
+            {
+                foreach (var cell in row)
+                {
+                    cell.IsSelectedShip = false;
+                }
+            }
+        }
+
         StateHasChanged();
+    }
+
+    private async Task HighlightSelectedShips()
+    {
+        if (PlayerState.HubConnection != null && !string.IsNullOrEmpty(selectedInfoType) && showInfo)
+        {
+            // Reset all cells
+            foreach (var row in TeamCells)
+            {
+                foreach (var cell in row)
+                {
+                    cell.IsSelectedShip = false;
+                }
+            }
+
+            try
+            {
+                var shipCoordinates = await PlayerState.HubConnection.InvokeAsync<List<int[]>>(
+                    "GetShipCoordinates", 
+                    PlayerState.HubConnection.ConnectionId, 
+                    selectedInfoType
+                );
+
+                Console.WriteLine($"Received {shipCoordinates.Count} coordinates to highlight");
+                foreach (var coord in shipCoordinates)
+                {
+                    int row = coord[0];
+                    int col = coord[1];
+                    Console.WriteLine($"Processing coordinate: ({row}, {col})");
+                    if (row >= 0 && row < TeamCells.Count && 
+                        col >= 0 && col < TeamCells[row].Count)
+                    {
+                        TeamCells[row][col].IsSelectedShip = true;
+                        Console.WriteLine($"Set IsSelectedShip=true for cell at ({row}, {col})");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error highlighting ships: {ex.Message}");
+            }
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    // Also add a handler for when the selection changes
+    private async Task OnInfoTypeChanged(ChangeEventArgs e)
+    {
+        selectedInfoType = e.Value?.ToString() ?? "";
+        if (showInfo)
+        {
+            await HighlightSelectedShips();
+        }
     }
 
     protected override async Task OnInitializedAsync()
@@ -313,12 +397,24 @@
 
             PlayerState.HubConnection.On<List<List<Square>>>("ReceiveBoardInfo", (receivedCells) =>
             {
-                TeamCells = receivedCells.Select(row => row.Select(cell => new GridCell
+                Console.WriteLine("Initializing board with received cells");
+                TeamCells = new List<List<GridCell>>();
+                for (int row = 0; row < receivedCells.Count; row++)
+                {
+                    var newRow = new List<GridCell>();
+                    for (int col = 0; col < receivedCells[row].Count; col++)
                     {
-                        State = cell,
-                        Row = receivedCells.IndexOf(row),
-                        Col = row.IndexOf(cell)
-                    }).ToList()).ToList();
+                        var cell = new GridCell 
+                        { 
+                            State = receivedCells[row][col],
+                            Row = row,
+                            Col = col
+                        };
+                        Console.WriteLine($"Cell at ({row}, {col}) has state: {cell.State}");
+                        newRow.Add(cell);
+                    }
+                    TeamCells.Add(newRow);
+                }
                 InvokeAsync(StateHasChanged);
             });
 

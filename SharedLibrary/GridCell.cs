@@ -8,10 +8,32 @@ namespace SharedLibrary
 {
     public class GridCell
     {
-        public int Row { get; set; }
-        public int Col { get; set; }
+        private int _row;
+        private int _col;
+        
+        public int Row 
+        { 
+            get => _row;
+            set
+            {
+                _row = value;
+                Console.WriteLine($"Setting Row to {value}");
+            }
+        }
+        
+        public int Col 
+        { 
+            get => _col;
+            set
+            {
+                _col = value;
+                Console.WriteLine($"Setting Col to {value}");
+            }
+        }
+        
         public bool IsHighlighted { get; set; } = false;
         public Square State { get; set; } = Square.Empty; // Track state of the cell
+        public bool IsSelectedShip { get; set; } = false;
 
         public string GetCellBackground()
         {

@@ -410,5 +410,50 @@ namespace BattleshipsDP.Hubs
             return ships.GroupBy(s => s.Name)
                        .ToDictionary(g => g.Key, g => g.Count());
         }
+
+        // Update the return type to List<int[]> instead of List<(int, int)>
+        public List<int[]> GetShipCoordinates(string connectionId, string infoType)
+        {
+            var room = _gameService.GetRoomByPlayerId(connectionId);
+            var team = room.Game.GetTeamByPlayer(connectionId);
+            var ships = team == "Team A" ? room.Game.ATeamBoard.Ships : room.Game.BTeamBoard.Ships;
+
+            List<(int, int)> coordinates = new List<(int, int)>();
+
+            if (infoType == "navy")
+            {
+                coordinates = ships.SelectMany(s => s.Coordinates).ToList();
+            }
+            else if (infoType.Contains("-"))
+            {
+                var parts = infoType.Split('-');
+                var shipType = parts[0];
+                var shipNumber = int.Parse(parts[1]);
+                var matchingShips = ships.Where(s => s.Name.ToLower() == shipType).ToList();
+                if (shipNumber <= matchingShips.Count)
+                {
+                    coordinates = matchingShips[shipNumber - 1].Coordinates;
+                }
+            }
+            else
+            {
+                coordinates = ships
+                    .Where(s => s.Name.ToLower().Contains(infoType.TrimEnd('s').ToLower()))
+                    .SelectMany(s => s.Coordinates)
+                    .ToList();
+            }
+
+            // Convert tuples to int arrays
+            var result = coordinates.Select(c => new int[] { c.Item1, c.Item2 }).ToList();
+
+            // Debug logging
+            Console.WriteLine($"Found {result.Count} coordinates for {infoType}");
+            foreach (var coord in result)
+            {
+                Console.WriteLine($"Ship coordinate: ({coord[0]}, {coord[1]})");
+            }
+
+            return result;
+        }
     }
 }
