@@ -1,4 +1,5 @@
 ﻿@page "/"
+@using BattleshipsDP.Client.Proxy
 
 @inject NavigationManager NavigationManager
 @inject PlayerState PlayerState
@@ -142,10 +143,12 @@
 </style>
 
 @code {
+    private IRoomService roomService;
     protected override async Task OnInitializedAsync()
     {
         await PlayerState.InitializeHubConnection("/gamehub", NavigationManager);
-
+        var realService = new RoomService(PlayerState, NavigationManager);
+        roomService = new RoomServiceProxy(realService);
         PlayerState.HubConnection?.On<List<GameRoom>>("Rooms", (roomList) =>
         {
             Console.WriteLine($"We got rooms! Counts = {roomList.Count}");
@@ -165,9 +168,10 @@
         if (roomNameValid && difficultySelected)
         {
             // Create room with selected difficulty
-            currentRoom = await PlayerState.HubConnection.InvokeAsync<GameRoom>(
-                "CreateRoom", currentRoomName, playerName, selectedDifficulty);
-            await NavigateToRoom(currentRoom.RoomId);
+            //currentRoom = await PlayerState.HubConnection.InvokeAsync<GameRoom>(
+            //    "CreateRoom", currentRoomName, playerName, selectedDifficulty);
+            //await NavigateToRoom(currentRoom.RoomId);
+            await roomService.CreateRoom(currentRoomName, playerName, selectedDifficulty);
         }
 
         StateHasChanged();
@@ -175,26 +179,28 @@
 
     private async Task JoinRoom(string roomId)
     {
+       
         if (!IsHubConnectionActive()) return;
+        await roomService.JoinRoom(roomId, playerName, rooms);
+        StateHasChanged();
+        //var joinedRoom = await PlayerState.HubConnection.InvokeAsync<GameRoom>(
+        //    "JoinRoom", roomId, playerName);
 
-        var joinedRoom = await PlayerState.HubConnection.InvokeAsync<GameRoom>(
-            "JoinRoom", roomId, playerName);
-
-        if (joinedRoom is not null)
-        {
-            currentRoom = joinedRoom;
-            var roomToUpdate = rooms.FirstOrDefault(r => r.RoomId == roomId);
-            if (roomToUpdate != null)
-            {
-                roomToUpdate.Players = joinedRoom.Players;
-                StateHasChanged();
-            }
-            await NavigateToRoom(roomId);
-        }
-        else
-        {
-            Console.WriteLine("Room is full or does not exist.");
-        }
+        //if (joinedRoom is not null)
+        //{
+        //    currentRoom = joinedRoom;
+        //    var roomToUpdate = rooms.FirstOrDefault(r => r.RoomId == roomId);
+        //    if (roomToUpdate != null)
+        //    {
+        //        roomToUpdate.Players = joinedRoom.Players;
+        //        StateHasChanged();
+        //    }
+        //    await NavigateToRoom(roomId);
+        //}
+        //else
+        //{
+        //    Console.WriteLine("Room is full or does not exist.");
+        //}
     }
 
     private void CheckPlayer()
