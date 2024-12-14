@@ -1,71 +1,59 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SharedLibrary
 {
     public class GridCell
     {
-        private int _row;
-        private int _col;
-        
-        public int Row 
-        { 
-            get => _row;
-            set
-            {
-                _row = value;
-                Console.WriteLine($"Setting Row to {value}");
-            }
-        }
-        
-        public int Col 
-        { 
-            get => _col;
-            set
-            {
-                _col = value;
-                Console.WriteLine($"Setting Col to {value}");
-            }
-        }
-        
+        private static readonly Dictionary<(int, int, Square), GridCell> _flyweightCache = new();
+
+        public int Row { get; set; }
+        public int Col { get; set; }
+        public Square State { get; set; }
         public bool IsHighlighted { get; set; } = false;
-        public Square State { get; set; } = Square.Empty; // Track state of the cell
         public bool IsSelectedShip { get; set; } = false;
+
+        public GridCell()
+        {
+        }
+        public GridCell(int row, int col)
+        {
+            Row = row;
+            Col = col;
+        }
+        private GridCell(int row, int col, Square state)
+        {
+            Row = row;
+            Col = col;
+            State = state;
+        }
+
+        public static GridCell Create(int row, int col, Square state)
+        {
+            if (!_flyweightCache.TryGetValue((row, col, state), out var cell))
+            {
+                cell = new GridCell(row, col, state);
+                _flyweightCache[(row, col, state)] = cell;
+            }
+
+            return cell;
+        }
+
         public GridCell Clone()
         {
-            return new GridCell
-            {
-                Row = this.Row,
-                Col = this.Col,
-                State = this.State,
-                IsHighlighted = this.IsHighlighted
-            };
+            // Creates a new GridCell instance with the same state.
+            return new GridCell(Row, Col, State) { IsHighlighted = IsHighlighted };
         }
+
         public string GetCellBackground()
         {
-            if (this.State == Square.Ship)
+            return State switch
             {
-                return "gray";
-            }
-            else if (this.State == Square.Hit)
-            {
-                return "red";
-            }
-            else if (this.State == Square.Miss)
-            {
-                return "blue";
-            }
-            else if (this.IsHighlighted)
-            {
-                return "yellow";
-            }
-            else
-            {
-                return "transparent";
-            }
+                Square.Ship => "gray",
+                Square.Hit => "red",
+                Square.Miss => "blue",
+                _ when IsHighlighted => "yellow",
+                _ => "transparent"
+            };
         }
     }
 }

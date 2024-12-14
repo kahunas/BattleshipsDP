@@ -1,4 +1,6 @@
 ﻿@using BattleshipsDP.Client.State
+@using SharedLibrary
+@using SharedLibrary.Composite;
 @page "/battle"
 
 @inject PlayerState PlayerState
@@ -11,15 +13,23 @@
     }
 
     @@keyframes flashShip {
-        0% { background-color: #90EE90; }
-        50% { background-color: #32CD32; }
-        100% { background-color: #90EE90; }
+        0% {
+            background-color: #90EE90;
+        }
+
+        50% {
+            background-color: #32CD32;
+        }
+
+        100% {
+            background-color: #90EE90;
+        }
     }
 </style>
 
 
 
-    @if (PlayerState.HubConnection is not null && gameStateContext is not null)
+@if (PlayerState.HubConnection is not null && gameStateContext is not null)
 {
     <h2>@gameStateContext.GetMessage()</h2>
     @if (!string.IsNullOrEmpty(WinnerTeam))
@@ -331,12 +341,14 @@
             var row = new List<GridCell>();
             for (int j = 0; j < 10; j++)
             {
-                row.Add(new GridCell { Row = i, Col = j });
+                // Use the Flyweight factory to create or retrieve GridCell instances
+                row.Add(GridCell.Create(i, j, Square.Empty));
             }
             grid.Add(row);
         }
         return grid;
     }
+
 
     // Replace the showShipCounts field with this
     private string selectedInfoType = "";
@@ -398,8 +410,8 @@
             try
             {
                 var shipCoordinates = await PlayerState.HubConnection.InvokeAsync<List<int[]>>(
-                    "GetShipCoordinates", 
-                    PlayerState.HubConnection.ConnectionId, 
+                    "GetShipCoordinates",
+                    PlayerState.HubConnection.ConnectionId,
                     selectedInfoType
                 );
 
@@ -424,7 +436,7 @@
                     int row = coord[0];
                     int col = coord[1];
                     Console.WriteLine($"Processing coordinate: ({row}, {col})");
-                    if (row >= 0 && row < TeamCells.Count && 
+                    if (row >= 0 && row < TeamCells.Count &&
                         col >= 0 && col < TeamCells[row].Count)
                     {
                         TeamCells[row][col].IsSelectedShip = true;
@@ -494,30 +506,29 @@
             });
 
             PlayerState.HubConnection.On<List<List<Square>>>("ReceiveBoardInfo", (receivedCells) =>
+    {
+        Console.WriteLine("Initializing board with received cells");
+        TeamCells = new List<List<GridCell>>();
+
+        for (int row = 0; row < receivedCells.Count; row++)
+        {
+            var newRow = new List<GridCell>();
+            for (int col = 0; col < receivedCells[row].Count; col++)
             {
-                Console.WriteLine("Initializing board with received cells");
-                TeamCells = new List<List<GridCell>>();
-                for (int row = 0; row < receivedCells.Count; row++)
-                {
-                    var newRow = new List<GridCell>();
-                    for (int col = 0; col < receivedCells[row].Count; col++)
-                    {
-                        var cell = new GridCell 
-                        { 
-                            State = receivedCells[row][col],
-                            Row = row,
-                            Col = col
-                        };
-                        Console.WriteLine($"Cell at ({row}, {col}) has state: {cell.State}");
-                        newRow.Add(cell);
-                    }
-                    TeamCells.Add(newRow);
-                }
-                InvokeAsync(StateHasChanged);
-            });
+                // Use the Flyweight factory to create or retrieve a GridCell instance
+                var cell = GridCell.Create(row, col, receivedCells[row][col]);
+                Console.WriteLine($"Cell at ({row}, {col}) has state: {cell.State}");
+                newRow.Add(cell);
+            }
+            TeamCells.Add(newRow);
+        }
+
+        InvokeAsync(StateHasChanged);
+    });
 
             PlayerState.HubConnection.On<int, int>("ReceiveBlockHighlight", (row, col) =>
             {
+                // Clear highlights from the enemy grid
                 foreach (var enemyRow in EnemyCells)
                 {
                     foreach (var enemyCell in enemyRow)
@@ -525,9 +536,13 @@
                         enemyCell.IsHighlighted = false;
                     }
                 }
+
+                // Highlight the specified cell on the enemy board
                 EnemyCells[row][col].IsHighlighted = true;
+
                 InvokeAsync(StateHasChanged);
             });
+
 
             PlayerState.HubConnection.On<int>("ReceiveBigAmount", async (amount) =>
             {
@@ -589,6 +604,7 @@
             var enemyRow = new List<GridCell>();
             for (int col = 0; col < boardSize; col++)
             {
+                // Create independent GridCell instances
                 teamRow.Add(new GridCell { Row = row, Col = col });
                 enemyRow.Add(new GridCell { Row = row, Col = col });
             }
@@ -597,15 +613,18 @@
         }
     }
 
+
     private async Task ToggleEnemyHighlight(GridCell cell)
     {
         if (!isPlayerTurn || cell == null) return;
 
+        // Ignore if the cell is already hit or missed
         if (cell.State == Square.Hit || cell.State == Square.Miss)
         {
             return;
         }
 
+        // Reset all highlights on the enemy board
         foreach (var enemyRow in EnemyCells)
         {
             foreach (var enemyCell in enemyRow)
@@ -614,10 +633,13 @@
             }
         }
 
+        // Highlight the selected cell on the enemy board
         cell.IsHighlighted = true;
+
         selectedRow = cell.Row;
         selectedCol = cell.Col;
 
+        // Notify other players about the selected cell if connection is active
         if (IsHubConnectionActive())
         {
             await PlayerState.HubConnection.SendAsync("HighlightBlockForTeam", cell.Row, cell.Col);
@@ -625,6 +647,8 @@
 
         StateHasChanged();
     }
+
+
 
     private async Task ShootAtOpponentBoard()
     {
@@ -672,14 +696,24 @@
 
     private async Task HandleShootResult(int row, int col, string result)
     {
-        var shotCommand = new ShotCommand(row, col, result, false);
-        gameStateContext.SetState(new WaitingState());
-        CommandInvoker.ExecuteCommand(shotCommand, EnemyCells);
+        // Target only the enemy board
+        var cell = EnemyCells[row][col];
+        if (result == "hit")
+        {
+            cell.State = Square.Hit;
+        }
+        else if (result == "miss")
+        {
+            cell.State = Square.Miss;
+        }
+
         await InvokeAsync(StateHasChanged);
     }
 
+
     private async Task HandleTeamHitResult(int row, int col, string result)
     {
+        // Update only the player's grid (TeamCells)
         var cell = TeamCells[row][col];
         if (result == "hit")
         {
@@ -693,6 +727,8 @@
         await InvokeAsync(StateHasChanged);
     }
 
+
+
     private async Task HandleGameOver(string message)
     {
         gameOverMessage = message;
@@ -703,7 +739,7 @@
     private async Task HandleBigAmount(int amount)
     {
         BigAmount = amount;
-        if(amount > 0)
+        if (amount > 0)
         {
             IsBigAvailable = true;
         }
