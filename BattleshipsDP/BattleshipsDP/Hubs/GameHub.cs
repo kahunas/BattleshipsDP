@@ -4,7 +4,8 @@ using SharedLibrary;
 using SharedLibrary.Bridge;
 using System.Numerics;
 using SharedLibrary.Builder;
-using BattleshipsDP.Client.Pages;
+using SharedLibrary.Composite;
+//using BattleshipsDP.Client.Pages;
 using System.IO;
 
 namespace BattleshipsDP.Hubs
@@ -399,6 +400,77 @@ namespace BattleshipsDP.Hubs
                     await Clients.Client(room.Game.CurrentPlayerId).SendAsync("YourTurn");
                 }
             }
+        }
+
+        public Dictionary<string, int> GetShipCounts(string connectionId)
+        {
+            var room = _gameService.GetRoomByPlayerId(connectionId);
+            var team = room.Game.GetTeamByPlayer(connectionId);
+            var ships = team == "Team A" ? room.Game.ATeamBoard.Ships : room.Game.BTeamBoard.Ships;
+
+            return ships.GroupBy(s => s.Name)
+                       .ToDictionary(g => g.Key, g => g.Count());
+        }
+
+        // Update the return type to List<int[]> instead of List<(int, int)>
+        public List<int[]> GetShipCoordinates(string connectionId, string infoType)
+        {
+            var room = _gameService.GetRoomByPlayerId(connectionId);
+            var team = room.Game.GetTeamByPlayer(connectionId);
+            var ships = team == "Team A" ? room.Game.ATeamBoard.Ships : room.Game.BTeamBoard.Ships;
+
+            ShipInfoComponent component;
+            if (infoType == "navy")
+            {
+                component = new NavyInfo();
+            }
+            else if (infoType.Contains("-"))
+            {
+                var parts = infoType.Split('-');
+                component = new IndividualShipInfo(parts[0], int.Parse(parts[1]));
+            }
+            else
+            {
+                component = new ShipCategoryInfo(infoType);
+                var shipType = infoType.TrimEnd('s').ToLower();
+                var count = ships.Count(s => s.Name.ToLower() == shipType);
+                for (int i = 1; i <= count; i++)
+                {
+                    component.Add(new IndividualShipInfo(shipType, i));
+                }
+            }
+
+            return component.GetCoordinates(ships);
+        }
+
+        public async Task<object> GetShipStatus(string connectionId, string shipInfo)
+        {
+            var room = _gameService.GetRoomByPlayerId(connectionId);
+            var team = room.Game.GetTeamByPlayer(connectionId);
+            var ships = team == "Team A" ? room.Game.ATeamBoard.Ships : room.Game.BTeamBoard.Ships;
+
+            ShipInfoComponent component;
+            if (shipInfo == "navy")
+            {
+                component = new NavyInfo();
+            }
+            else if (shipInfo.Contains("-"))
+            {
+                var parts = shipInfo.Split('-');
+                component = new IndividualShipInfo(parts[0], int.Parse(parts[1]));
+            }
+            else
+            {
+                component = new ShipCategoryInfo(shipInfo);
+                var shipType = shipInfo.TrimEnd('s').ToLower();
+                var count = ships.Count(s => s.Name.ToLower() == shipType);
+                for (int i = 1; i <= count; i++)
+                {
+                    component.Add(new IndividualShipInfo(shipType, i));
+                }
+            }
+
+            return component.GetStatus(ships);
         }
     }
 }

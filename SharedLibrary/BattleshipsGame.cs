@@ -126,6 +126,25 @@ namespace SharedLibrary
             // Use the selected strategies for each team
             placementStrategies[teamAStrategy].PlaceShips(ATeamBoard, _levelFactory.GetShips());
             placementStrategies[teamBStrategy].PlaceShips(BTeamBoard, _levelFactory.GetShips());
+
+            // Display ship counts for both teams
+            Console.WriteLine("\nTeam A Ships:");
+            DisplayShipCounts(ATeamBoard.Ships);
+            
+            Console.WriteLine("\nTeam B Ships:");
+            DisplayShipCounts(BTeamBoard.Ships);
+        }
+
+        private void DisplayShipCounts(List<Ship> ships)
+        {
+            var shipCounts = ships
+                .GroupBy(s => s.Name)
+                .Select(g => new { Type = g.Key, Count = g.Count() });
+
+            foreach (var shipType in shipCounts)
+            {
+                Console.WriteLine($"{shipType.Type}: {shipType.Count}");
+            }
         }
 
         public void CountShots()
@@ -245,32 +264,6 @@ namespace SharedLibrary
 
             return result;
         }
-
-        //    public List<IShot> DefineShots()
-        //    {
-        //        var builder = new ShotBuilder();
-        //
-        //        return new List<IShot>
-        //{
-        //    builder.SetName("Simple").SetSpread(new List<(int, int)> { (0, 0) }).Build(),
-        //    builder.SetName("Big").SetSpread(new List<(int, int)>
-        //    {
-        //        (0, 0), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)
-        //    }).Build(),
-        //    builder.SetName("Piercer").SetSpread(new List<(int, int)>
-        //    {
-        //        (0, 0), (1, 0), (2, 0), (3, 0)
-        //    }).Build(),
-        //    builder.SetName("Slasher").SetSpread(new List<(int, int)>
-        //    {
-        //        (0, 0), (0, 1), (0, 2), (0, 3)
-        //    }).Build(),
-        //    builder.SetName("Cross").SetSpread(new List<(int, int)>
-        //    {
-        //        (0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)
-        //    }).Build()
-        //};
-        //    }
 
         // Add new method to set team strategy
         public void SetTeamStrategy(string team, string strategy)

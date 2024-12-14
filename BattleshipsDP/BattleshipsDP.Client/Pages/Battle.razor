@@ -5,6 +5,18 @@
 @inject NavigationManager Navigation
 @rendermode @(new InteractiveWebAssemblyRenderMode(false))
 
+<style>
+    .flash-ship {
+        animation: flashShip 1s infinite;
+    }
+
+    @@keyframes flashShip {
+        0% { background-color: #90EE90; }
+        50% { background-color: #32CD32; }
+        100% { background-color: #90EE90; }
+    }
+</style>
+
 
 
     @if (PlayerState.HubConnection is not null && gameStateContext is not null)
@@ -97,7 +109,8 @@
                         {
                             @foreach (var cell in row)
                             {
-                                <div style="width: 50px; height: 50px; border: 1px solid black; background-color: @(cell.GetCellBackground())">
+                                <div class="@(showInfo && cell.IsSelectedShip ? "flash-ship" : "")"
+                                     style="width: 50px; height: 50px; border: 1px solid black; background-color: @(cell.GetCellBackground())">
                                 </div>
                             }
                         }
@@ -169,6 +182,74 @@
                     <li>Shot at (@command.Row, @command.Col) - Type: @command.ShotType - @(command.IsPlayerShot ? "Player" : "Enemy")</li>
                 }
             </ul>
+        </div>
+
+        <!-- Replace the ship counts section -->
+        <div>
+            <select @bind="selectedInfoType" @bind:after="HighlightSelectedShips">
+                <option value="">Select Information</option>
+                <option value="navy">Entire Navy</option>
+                <optgroup label="Ship Categories">
+                    <option value="destroyers">Destroyers</option>
+                    <option value="submarines">Submarines</option>
+                    <option value="battleships">Battleships</option>
+                    <option value="carriers">Carriers</option>
+                </optgroup>
+                <optgroup label="Individual Ships">
+                    @if (shipCounts != null)
+                    {
+                        @foreach (var shipType in shipCounts)
+                        {
+                            @for (int i = 1; i <= shipType.Value; i++)
+                            {
+                                <option value="@($"{shipType.Key.ToLower()}-{i}")">@shipType.Key #@i</option>
+                            }
+                        }
+                    }
+                </optgroup>
+            </select>
+            <button @onclick="ToggleInfoDisplay">
+                @(showInfo ? "Hide Information" : "Show Information")
+            </button>
+            @if (showInfo && !string.IsNullOrEmpty(selectedInfoType))
+            {
+                <div class="ship-counts">
+                    <h4>Team @PlayerTeam Ships:</h4>
+                    @if (shipCounts != null)
+                    {
+                        @if (selectedInfoType == "navy")
+                        {
+                            @foreach (var count in shipCounts)
+                            {
+                                <p>@count.Key: @count.Value</p>
+                            }
+                        }
+                        else if (selectedInfoType.Contains("-"))
+                        {
+                            var parts = selectedInfoType.Split('-');
+                            var shipType = parts[0];
+                            var shipNumber = parts[1];
+                            if (selectedShipStatus != null)
+                            {
+                                <div class="ship-status">
+                                    <p>@shipType #@shipNumber Status:</p>
+                                    <p>Location: @selectedShipStatus.LocationInfo</p>
+                                    <p>Health: @selectedShipStatus.Health/@selectedShipStatus.MaxHealth</p>
+                                    <p>Status: @(selectedShipStatus.IsActive ? "Active" : "Destroyed")</p>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            var filteredShips = shipCounts.Where(s => s.Key.ToLower().Contains(selectedInfoType.TrimEnd('s')));
+                            foreach (var ship in filteredShips)
+                            {
+                                <p>@ship.Key: @ship.Value</p>
+                            }
+                        }
+                    }
+                </div>
+            }
         </div>
     </div>
 
@@ -257,6 +338,119 @@
         return grid;
     }
 
+    // Replace the showShipCounts field with this
+    private string selectedInfoType = "";
+
+    // Add these new fields
+    private Dictionary<string, int>? shipCounts;
+    private bool showInfo = false;
+    private ShipStatus? selectedShipStatus;
+
+    // Add this class inside the @code block
+    private class ShipStatus
+    {
+        public string LocationInfo { get; set; }
+        public int Health { get; set; }
+        public int MaxHealth { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    private async Task ToggleInfoDisplay()
+    {
+        if (!showInfo)
+        {
+            showInfo = true;
+            if (PlayerState.HubConnection != null)
+            {
+                shipCounts = await PlayerState.HubConnection.InvokeAsync<Dictionary<string, int>>("GetShipCounts", PlayerState.HubConnection.ConnectionId);
+                await HighlightSelectedShips(); // Only highlight when showing info
+            }
+        }
+        else
+        {
+            showInfo = false;
+            // Reset all cells' IsSelectedShip property when hiding info
+            foreach (var row in TeamCells)
+            {
+                foreach (var cell in row)
+                {
+                    cell.IsSelectedShip = false;
+                }
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task HighlightSelectedShips()
+    {
+        if (PlayerState.HubConnection != null && !string.IsNullOrEmpty(selectedInfoType) && showInfo)
+        {
+            // Reset all cells
+            foreach (var row in TeamCells)
+            {
+                foreach (var cell in row)
+                {
+                    cell.IsSelectedShip = false;
+                }
+            }
+
+            try
+            {
+                var shipCoordinates = await PlayerState.HubConnection.InvokeAsync<List<int[]>>(
+                    "GetShipCoordinates", 
+                    PlayerState.HubConnection.ConnectionId, 
+                    selectedInfoType
+                );
+
+                // If viewing a specific ship, get its status
+                if (selectedInfoType.Contains("-"))
+                {
+                    var status = await PlayerState.HubConnection.InvokeAsync<ShipStatus>(
+                        "GetShipStatus",
+                        PlayerState.HubConnection.ConnectionId,
+                        selectedInfoType
+                    );
+                    selectedShipStatus = status;
+                }
+                else
+                {
+                    selectedShipStatus = null;
+                }
+
+                Console.WriteLine($"Received {shipCoordinates.Count} coordinates to highlight");
+                foreach (var coord in shipCoordinates)
+                {
+                    int row = coord[0];
+                    int col = coord[1];
+                    Console.WriteLine($"Processing coordinate: ({row}, {col})");
+                    if (row >= 0 && row < TeamCells.Count && 
+                        col >= 0 && col < TeamCells[row].Count)
+                    {
+                        TeamCells[row][col].IsSelectedShip = true;
+                        Console.WriteLine($"Set IsSelectedShip=true for cell at ({row}, {col})");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error highlighting ships: {ex.Message}");
+            }
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    // Also add a handler for when the selection changes
+    private async Task OnInfoTypeChanged(ChangeEventArgs e)
+    {
+        selectedInfoType = e.Value?.ToString() ?? "";
+        if (showInfo)
+        {
+            await HighlightSelectedShips();
+        }
+    }
+
     protected override async Task OnInitializedAsync()
     {
         if (PlayerState.HubConnection != null)
@@ -301,12 +495,24 @@
 
             PlayerState.HubConnection.On<List<List<Square>>>("ReceiveBoardInfo", (receivedCells) =>
             {
-                TeamCells = receivedCells.Select(row => row.Select(cell => new GridCell
+                Console.WriteLine("Initializing board with received cells");
+                TeamCells = new List<List<GridCell>>();
+                for (int row = 0; row < receivedCells.Count; row++)
+                {
+                    var newRow = new List<GridCell>();
+                    for (int col = 0; col < receivedCells[row].Count; col++)
                     {
-                        State = cell,
-                        Row = receivedCells.IndexOf(row),
-                        Col = row.IndexOf(cell)
-                    }).ToList()).ToList();
+                        var cell = new GridCell 
+                        { 
+                            State = receivedCells[row][col],
+                            Row = row,
+                            Col = col
+                        };
+                        Console.WriteLine($"Cell at ({row}, {col}) has state: {cell.State}");
+                        newRow.Add(cell);
+                    }
+                    TeamCells.Add(newRow);
+                }
                 InvokeAsync(StateHasChanged);
             });
 
@@ -568,10 +774,6 @@
         {
             await PlayerState.HubConnection.SendAsync("PlayerReadyForBattle");
             isReadyForBattle = true;
- //           BigAmount = await PlayerState.HubConnection.InvokeAsync<int>("GetBig", PlayerState.HubConnection.ConnectionId);
- //           PiercerAmount = await PlayerState.HubConnection.InvokeAsync<int>("GetPiercer", PlayerState.HubConnection.ConnectionId);
- //           SlasherAmount = await PlayerState.HubConnection.InvokeAsync<int>("GetSlasher", PlayerState.HubConnection.ConnectionId);
- //           CrossAmount = await PlayerState.HubConnection.InvokeAsync<int>("GetCross", PlayerState.HubConnection.ConnectionId);
             StateHasChanged();
         }
     }
