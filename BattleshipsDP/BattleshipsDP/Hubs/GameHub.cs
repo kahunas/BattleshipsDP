@@ -4,7 +4,8 @@ using SharedLibrary;
 using SharedLibrary.Bridge;
 using System.Numerics;
 using SharedLibrary.Builder;
-using BattleshipsDP.Client.Pages;
+using SharedLibrary.Composite;
+//using BattleshipsDP.Client.Pages;
 using System.IO;
 
 namespace BattleshipsDP.Hubs
@@ -418,42 +419,28 @@ namespace BattleshipsDP.Hubs
             var team = room.Game.GetTeamByPlayer(connectionId);
             var ships = team == "Team A" ? room.Game.ATeamBoard.Ships : room.Game.BTeamBoard.Ships;
 
-            List<(int, int)> coordinates = new List<(int, int)>();
-
+            ShipInfoComponent component;
             if (infoType == "navy")
             {
-                coordinates = ships.SelectMany(s => s.Coordinates).ToList();
+                component = new NavyInfo();
             }
             else if (infoType.Contains("-"))
             {
                 var parts = infoType.Split('-');
-                var shipType = parts[0];
-                var shipNumber = int.Parse(parts[1]);
-                var matchingShips = ships.Where(s => s.Name.ToLower() == shipType).ToList();
-                if (shipNumber <= matchingShips.Count)
-                {
-                    coordinates = matchingShips[shipNumber - 1].Coordinates;
-                }
+                component = new IndividualShipInfo(parts[0], int.Parse(parts[1]));
             }
             else
             {
-                coordinates = ships
-                    .Where(s => s.Name.ToLower().Contains(infoType.TrimEnd('s').ToLower()))
-                    .SelectMany(s => s.Coordinates)
-                    .ToList();
+                component = new ShipCategoryInfo(infoType);
+                var shipType = infoType.TrimEnd('s').ToLower();
+                var count = ships.Count(s => s.Name.ToLower() == shipType);
+                for (int i = 1; i <= count; i++)
+                {
+                    component.Add(new IndividualShipInfo(shipType, i));
+                }
             }
 
-            // Convert tuples to int arrays
-            var result = coordinates.Select(c => new int[] { c.Item1, c.Item2 }).ToList();
-
-            // Debug logging
-            Console.WriteLine($"Found {result.Count} coordinates for {infoType}");
-            foreach (var coord in result)
-            {
-                Console.WriteLine($"Ship coordinate: ({coord[0]}, {coord[1]})");
-            }
-
-            return result;
+            return component.GetCoordinates(ships);
         }
 
         public async Task<object> GetShipStatus(string connectionId, string shipInfo)
@@ -462,25 +449,28 @@ namespace BattleshipsDP.Hubs
             var team = room.Game.GetTeamByPlayer(connectionId);
             var ships = team == "Team A" ? room.Game.ATeamBoard.Ships : room.Game.BTeamBoard.Ships;
 
-            var parts = shipInfo.Split('-');
-            var shipType = parts[0];
-            var shipNumber = int.Parse(parts[1]) - 1;
-
-            var matchingShips = ships.Where(s => s.Name.ToLower() == shipType).ToList();
-            if (shipNumber < matchingShips.Count)
+            ShipInfoComponent component;
+            if (shipInfo == "navy")
             {
-                var ship = matchingShips[shipNumber];
-                var status = ship.GetStatus();
-                return new
+                component = new NavyInfo();
+            }
+            else if (shipInfo.Contains("-"))
+            {
+                var parts = shipInfo.Split('-');
+                component = new IndividualShipInfo(parts[0], int.Parse(parts[1]));
+            }
+            else
+            {
+                component = new ShipCategoryInfo(shipInfo);
+                var shipType = shipInfo.TrimEnd('s').ToLower();
+                var count = ships.Count(s => s.Name.ToLower() == shipType);
+                for (int i = 1; i <= count; i++)
                 {
-                    LocationInfo = status.Location,
-                    Health = status.Health,
-                    MaxHealth = status.MaxHealth,
-                    IsActive = status.IsActive
-                };
+                    component.Add(new IndividualShipInfo(shipType, i));
+                }
             }
 
-            return null;
+            return component.GetStatus(ships);
         }
     }
 }
