@@ -69,6 +69,12 @@ namespace SharedLibrary
             return Health == 0;
         }
 
+        public string GetStatusInfo()
+        {
+            if (IsDestroyed())
+                return $"{Name} has been destroyed!";
+            return $"{Name} hit! {Health}/{Size} health remaining";
+        }
 
         public void AddBigShot(int amount)
         {
@@ -118,21 +124,18 @@ namespace SharedLibrary
             }
         }
 
+        public string GetLocationInfo()
+        {
+            if (Coordinates.Count == 0) return "Not placed";
+            
+            var start = Coordinates[0];
+            var end = Coordinates[^1];
+            return $"From {(char)('A' + start.Item1)}{start.Item2 + 1} to {(char)('A' + end.Item1)}{end.Item2 + 1}";
+        }
 
-        //// Uses a specific type of shot by name, if available
-        //public void UseShot(string shotName)
-        //{
-        //    var shot = SpecialShots.FirstOrDefault(s => s.Name == shotName);
-        //    if (shot != null && shot.GetRemainingUses() > 0)
-        //    {
-        //        shot.UseShot();
-        //    }
-        //}
-        //
-        //// Retrieves the available special shots with remaining uses for display or selection
-        //public IEnumerable<IShotCollection> GetAvailableShots()
-        //{
-        //    return SpecialShots.Where(s => s.GetRemainingUses() > 0);
-        //}
+        public (string Location, int Health, int MaxHealth, bool IsActive) GetStatus()
+        {
+            return (GetLocationInfo(), Health, Size, Health > 0);
+        }
     }
 }

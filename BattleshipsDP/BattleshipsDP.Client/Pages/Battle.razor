@@ -216,10 +216,14 @@
                             var parts = selectedInfoType.Split('-');
                             var shipType = parts[0];
                             var shipNumber = parts[1];
-                            var ship = shipCounts.FirstOrDefault(s => s.Key.ToLower() == shipType);
-                            if (ship.Key != null)
+                            if (selectedShipStatus != null)
                             {
-                                <p>@ship.Key #@shipNumber Status: Active</p>
+                                <div class="ship-status">
+                                    <p>@shipType #@shipNumber Status:</p>
+                                    <p>Location: @selectedShipStatus.LocationInfo</p>
+                                    <p>Health: @selectedShipStatus.Health/@selectedShipStatus.MaxHealth</p>
+                                    <p>Status: @(selectedShipStatus.IsActive ? "Active" : "Destroyed")</p>
+                                </div>
                             }
                         }
                         else
@@ -280,6 +284,16 @@
     // Add these new fields
     private Dictionary<string, int>? shipCounts;
     private bool showInfo = false;
+    private ShipStatus? selectedShipStatus;
+
+    // Add this class inside the @code block
+    private class ShipStatus
+    {
+        public string LocationInfo { get; set; }
+        public int Health { get; set; }
+        public int MaxHealth { get; set; }
+        public bool IsActive { get; set; }
+    }
 
     private async Task ToggleInfoDisplay()
     {
@@ -328,6 +342,21 @@
                     PlayerState.HubConnection.ConnectionId, 
                     selectedInfoType
                 );
+
+                // If viewing a specific ship, get its status
+                if (selectedInfoType.Contains("-"))
+                {
+                    var status = await PlayerState.HubConnection.InvokeAsync<ShipStatus>(
+                        "GetShipStatus",
+                        PlayerState.HubConnection.ConnectionId,
+                        selectedInfoType
+                    );
+                    selectedShipStatus = status;
+                }
+                else
+                {
+                    selectedShipStatus = null;
+                }
 
                 Console.WriteLine($"Received {shipCoordinates.Count} coordinates to highlight");
                 foreach (var coord in shipCoordinates)
@@ -670,10 +699,6 @@
         {
             await PlayerState.HubConnection.SendAsync("PlayerReadyForBattle");
             isReadyForBattle = true;
- //           BigAmount = await PlayerState.HubConnection.InvokeAsync<int>("GetBig", PlayerState.HubConnection.ConnectionId);
- //           PiercerAmount = await PlayerState.HubConnection.InvokeAsync<int>("GetPiercer", PlayerState.HubConnection.ConnectionId);
- //           SlasherAmount = await PlayerState.HubConnection.InvokeAsync<int>("GetSlasher", PlayerState.HubConnection.ConnectionId);
- //           CrossAmount = await PlayerState.HubConnection.InvokeAsync<int>("GetCross", PlayerState.HubConnection.ConnectionId);
             StateHasChanged();
         }
     }

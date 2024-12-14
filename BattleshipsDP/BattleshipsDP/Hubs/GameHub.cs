@@ -455,5 +455,32 @@ namespace BattleshipsDP.Hubs
 
             return result;
         }
+
+        public async Task<object> GetShipStatus(string connectionId, string shipInfo)
+        {
+            var room = _gameService.GetRoomByPlayerId(connectionId);
+            var team = room.Game.GetTeamByPlayer(connectionId);
+            var ships = team == "Team A" ? room.Game.ATeamBoard.Ships : room.Game.BTeamBoard.Ships;
+
+            var parts = shipInfo.Split('-');
+            var shipType = parts[0];
+            var shipNumber = int.Parse(parts[1]) - 1;
+
+            var matchingShips = ships.Where(s => s.Name.ToLower() == shipType).ToList();
+            if (shipNumber < matchingShips.Count)
+            {
+                var ship = matchingShips[shipNumber];
+                var status = ship.GetStatus();
+                return new
+                {
+                    LocationInfo = status.Location,
+                    Health = status.Health,
+                    MaxHealth = status.MaxHealth,
+                    IsActive = status.IsActive
+                };
+            }
+
+            return null;
+        }
     }
 }
