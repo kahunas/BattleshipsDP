@@ -34,7 +34,16 @@ namespace SharedLibrary
         public bool IsHighlighted { get; set; } = false;
         public Square State { get; set; } = Square.Empty; // Track state of the cell
         public bool IsSelectedShip { get; set; } = false;
-
+        public GridCell Clone()
+        {
+            return new GridCell
+            {
+                Row = this.Row,
+                Col = this.Col,
+                State = this.State,
+                IsHighlighted = this.IsHighlighted
+            };
+        }
         public string GetCellBackground()
         {
             if (this.State == Square.Ship)

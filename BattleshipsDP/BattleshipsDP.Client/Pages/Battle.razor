@@ -1,4 +1,5 @@
-﻿@page "/battle"
+﻿@using BattleshipsDP.Client.State
+@page "/battle"
 
 @inject PlayerState PlayerState
 @inject NavigationManager Navigation
@@ -16,23 +17,33 @@
     }
 </style>
 
-@if (PlayerState.HubConnection is not null)
+
+
+    @if (PlayerState.HubConnection is not null && gameStateContext is not null)
 {
+    <h2>@gameStateContext.GetMessage()</h2>
     @if (!string.IsNullOrEmpty(WinnerTeam))
     {
         <h1 style="color: green;">@WinnerTeam Wins!</h1>
     }
 
-    <div>
-        <h3>Player Information</h3>
-        <p>Name: @PlayerName</p>
-        <p>Connection ID: @PlayerState.HubConnection.ConnectionId</p>
-        <p>Team: @PlayerTeam</p>
-        @if (isPlayerTurn)
-        {
-            <h2 style="color: blue;">Your turn!</h2>
-        }
-    </div>
+    @if (PlayerState.HubConnection is not null)
+    {
+        <h2>Game Controls</h2>
+        <button @onclick="StopGame">Stop</button>
+        <button @onclick="PlayGame" disabled="@(!isGameStopped)">Play</button>
+
+        <div>
+            <h3>Player Information</h3>
+            <p>Name: @PlayerName</p>
+            <p>Connection ID: @PlayerState.HubConnection.ConnectionId</p>
+            <p>Team: @PlayerTeam</p>
+            @if (isPlayerTurn)
+            {
+                <h2 style="color: blue;">Your turn!</h2>
+            }
+        </div>
+    }
 
     @if (!battleStarted)
     {
@@ -46,7 +57,8 @@
                         <option value="Edge">Edge Placement</option>
                         <option value="Spaced">Spaced Placement</option>
                     </select>
-                    <button @onclick="ConfirmStrategy">Confirm Strategy</button>
+                    <button @onclick="ConfirmStrategy" disabled="@(!gameStateContext.CanPerformAction("ConfirmStrategy"))">Confirm Strategy</button>
+
                 </div>
             }
             @if (!isReadyForBattle)
@@ -56,7 +68,7 @@
                     {
                         <p>Selected Strategy: @selectedStrategy</p>
                     }
-                    <button @onclick="ReadyForBattle">Ready for Battle</button>
+                    <button @onclick="ReadyForBattle" disabled="@(!gameStateContext.CanPerformAction("ReadyForBattle"))">Ready for Battle</button>
                 </div>
             }
             else
@@ -118,7 +130,8 @@
                     <option value="Slasher" disabled="@(!IsSlasherAvailable)">Slasher shot(@SlasherAmount)</option>
                     <option value="Cross" disabled="@(!IsCrossAvailable)">Cross shot (@CrossAmount)</option>
                 </select>
-                <button @onclick="ShootAtOpponentBoard" disabled="@(!isPlayerTurn)">Fire</button>
+                <p>@(gameStateContext.CanPerformAction("Wait") ? "Waiting for your turn..." : "")</p>
+                <button @onclick="ShootAtOpponentBoard" disabled="@(!isPlayerTurn && !gameStateContext.CanPerformAction("Shoot"))">Fire</button>
             </div>
         }
 
@@ -272,11 +285,58 @@
     private int? PiercerAmount = null;
     private int? SlasherAmount = null;
     private int? CrossAmount = null;
+    private GameStateContext gameStateContext;
 
     private List<List<GridCell>> TeamCells = new List<List<GridCell>>();
     private List<List<GridCell>> EnemyCells = new List<List<GridCell>>();
 
     private CommandInvoker CommandInvoker = new CommandInvoker();
+
+    private GameState gameState;
+    private GameStateMemento savedState;
+    private bool isGameStopped = false;
+
+
+    private async Task StopGame()
+    {
+        // Save the game state
+        gameState = new GameState(TeamCells, EnemyCells, isPlayerTurn, PlayerState.HubConnection.ConnectionId);
+        savedState = gameState.SaveState();
+        isGameStopped = true;
+
+        Console.WriteLine("Game state saved.");
+    }
+
+    private async Task PlayGame()
+    {
+        if (savedState != null)
+        {
+            // Restore the game state
+            gameState.RestoreState(savedState);
+            TeamCells = gameState.TeamCells;
+            EnemyCells = gameState.EnemyCells;
+            isPlayerTurn = gameState.IsPlayerTurn;
+
+            isGameStopped = false;
+            Console.WriteLine("Game state restored.");
+            StateHasChanged();
+        }
+    }
+
+    private List<List<GridCell>> InitializeGrid()
+    {
+        var grid = new List<List<GridCell>>();
+        for (int i = 0; i < 10; i++)
+        {
+            var row = new List<GridCell>();
+            for (int j = 0; j < 10; j++)
+            {
+                row.Add(new GridCell { Row = i, Col = j });
+            }
+            grid.Add(row);
+        }
+        return grid;
+    }
 
     // Replace the showShipCounts field with this
     private string selectedInfoType = "";
@@ -393,8 +453,15 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (PlayerState.HubConnection != null)
+        {
+            // Initialize game data here
+            TeamCells = InitializeGrid();
+            EnemyCells = InitializeGrid();
+        }
         if (IsHubConnectionActive())
         {
+            gameStateContext = new GameStateContext(new PreparationState());
             boardSize = await PlayerState.HubConnection.InvokeAsync<int>("GetBoardSize", PlayerState.HubConnection.ConnectionId);
             InitializeBoards();
             if (PlayerState.HubConnection.State == HubConnectionState.Disconnected)
@@ -414,12 +481,14 @@
 
             PlayerState.HubConnection.On("YourTurn", () =>
             {
+                gameStateContext.SetState(new YourTurnState());
                 isPlayerTurn = true;
                 StateHasChanged();
             });
 
             PlayerState.HubConnection.On("NotYourTurn", () =>
             {
+                gameStateContext.SetState(new WaitingState());
                 isPlayerTurn = false;
                 InvokeAsync(StateHasChanged);
             });
@@ -489,6 +558,7 @@
 
             PlayerState.HubConnection.On<string>("ReceiveGameOver", async (message) =>
             {
+                gameStateContext.SetState(new GameOverState(message));
                 await HandleGameOver(message);
             });
 
@@ -502,6 +572,7 @@
             PlayerState.HubConnection.On("StartBattle", () =>
             {
                 battleStarted = true;
+                gameStateContext.SetState(new WaitingState());
                 StateHasChanged();
             });
         }
@@ -558,47 +629,51 @@
     private async Task ShootAtOpponentBoard()
     {
         if (!isPlayerTurn) return;
-
-        if (selectedRow.HasValue && selectedCol.HasValue && selectedShot != null)
+        if (gameStateContext.CanPerformAction("Shoot"))
         {
-            if (IsHubConnectionActive())
+            if (selectedRow.HasValue && selectedCol.HasValue && selectedShot != null)
             {
-                //var shotBuilder = new ShotBuilder()
-                //    .SetName(selectedShot)
-                //    .SetSpread(new List<(int, int)> { (0, 0) });
-                //
-                //IShot shot = shotBuilder.Build();
-                //
-                //if (selectedShot == "Slasher")
-                //{
-                //    shot = new SplashDamageDecorator(shot, splashRadius: 1);
-                //}
-                //
-                //var shotCoordinates = shot.ShotCoordinates(selectedRow.Value, selectedCol.Value);
-                //
-                //foreach (var (x, y) in shotCoordinates)
-                //{
-                //    if (x >= 0 && y >= 0 && x < EnemyCells.Count && y < EnemyCells[x].Count)
-                //    {
-                //        var shotCommand = new ShotCommand(x, y, selectedShot, true);
-                //        CommandInvoker.ExecuteCommand(shotCommand, EnemyCells);
-                //    }
-                //}
+                if (IsHubConnectionActive())
+                {
+                    //var shotBuilder = new ShotBuilder()
+                    //    .SetName(selectedShot)
+                    //    .SetSpread(new List<(int, int)> { (0, 0) });
+                    //
+                    //IShot shot = shotBuilder.Build();
+                    //
+                    //if (selectedShot == "Slasher")
+                    //{
+                    //    shot = new SplashDamageDecorator(shot, splashRadius: 1);
+                    //}
+                    //
+                    //var shotCoordinates = shot.ShotCoordinates(selectedRow.Value, selectedCol.Value);
+                    //
+                    //foreach (var (x, y) in shotCoordinates)
+                    //{
+                    //    if (x >= 0 && y >= 0 && x < EnemyCells.Count && y < EnemyCells[x].Count)
+                    //    {
+                    //        var shotCommand = new ShotCommand(x, y, selectedShot, true);
+                    //        CommandInvoker.ExecuteCommand(shotCommand, EnemyCells);
+                    //    }
+                    //}
 
-                await PlayerState.HubConnection.SendAsync("ShootAtOpponent", selectedRow.Value, selectedCol.Value, selectedShot);
+                    await PlayerState.HubConnection.SendAsync("ShootAtOpponent", selectedRow.Value, selectedCol.Value, selectedShot);
 
-                isPlayerTurn = false;
+                    isPlayerTurn = false;
+                }
+            }
+            else
+            {
+                Console.WriteLine("No cell selected to shoot at.");
             }
         }
-        else
-        {
-            Console.WriteLine("No cell selected to shoot at.");
-        }
+        else return;
     }
 
     private async Task HandleShootResult(int row, int col, string result)
     {
         var shotCommand = new ShotCommand(row, col, result, false);
+        gameStateContext.SetState(new WaitingState());
         CommandInvoker.ExecuteCommand(shotCommand, EnemyCells);
         await InvokeAsync(StateHasChanged);
     }
