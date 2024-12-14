@@ -7,6 +7,7 @@ using SharedLibrary.Builder;
 using SharedLibrary.Composite;
 //using BattleshipsDP.Client.Pages;
 using System.IO;
+using SharedLibrary.Interpreter;
 
 namespace BattleshipsDP.Hubs
 {
@@ -344,14 +345,14 @@ namespace BattleshipsDP.Hubs
             var connectionId = Context.ConnectionId;
             var room = _gameService.GetRoomByPlayerId(connectionId);
             if (room == null) return;
-
+        
             var team = room.Game.GetTeamByPlayer(connectionId);
-
+        
             // Set the strategy for the team
             room.Game.SetTeamStrategy(team, strategy);
-
+        
             var teammates = room.Game.GetTeammates(connectionId);
-
+        
             // Notify teammates about the selected strategy
             foreach (var teammate in teammates)
             {
@@ -362,6 +363,37 @@ namespace BattleshipsDP.Hubs
                 await NotifyCrossRemaining(room, connectionId);
             }
         }
+
+        //public async Task ConfirmTeamStrategy(string strategy)
+        //{
+        //    var connectionId = Context.ConnectionId;
+        //    var room = _gameService.GetRoomByPlayerId(connectionId);
+        //    if (room == null) return;
+        //
+        //    var teamName = room.Game.GetTeamByPlayer(connectionId);
+        //    var board = teamName == "Team A" ? room.Game.ATeamBoard : room.Game.BTeamBoard;
+        //    var ships = room.Game.GetLevelFactory().GetShips();
+        //
+        //    try
+        //    {
+        //        // Apply the selected strategy using the Interpreter
+        //        var strategyExpression = StrategyFactory.Create(strategy);
+        //        strategyExpression.PlaceShips(board, ships);
+        //
+        //        // Notify teammates about the applied strategy
+        //        var teammates = room.Game.GetTeammates(connectionId);
+        //        foreach (var teammate in teammates)
+        //        {
+        //            await Clients.Client(teammate.ConnectionId).SendAsync("ReceiveTeamStrategy", strategy);
+        //        }
+        //
+        //        Console.WriteLine($"{teamName} has applied the {strategy} strategy.");
+        //    }
+        //    catch (ArgumentException ex)
+        //    {
+        //        Console.WriteLine($"Failed to set strategy: {ex.Message}");
+        //    }
+        //}
 
         public async Task PlayerReadyForBattle()
         {

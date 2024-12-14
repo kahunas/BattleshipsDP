@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using SharedLibrary.Builder;
 using SharedLibrary.Factory;
+using SharedLibrary.Interpreter;
 using SharedLibrary.Strategies;
 
 namespace SharedLibrary
@@ -35,7 +36,9 @@ namespace SharedLibrary
 
         private List<ITurnObserver> turnObservers = new List<ITurnObserver>();
         private TurnHandler _turnHandler;
-        private Dictionary<string, IShipPlacementStrategy> placementStrategies;
+        IStrategyExpression ATeamStrategyExpression;
+        IStrategyExpression BTeamStrategyExpression;
+        //private Dictionary<string, IShipPlacementStrategy> placementStrategies;
         private string teamAStrategy = "Random";
         private string teamBStrategy = "Random";
 
@@ -55,13 +58,13 @@ namespace SharedLibrary
             BTeamPlayer1Id = string.Empty;
             BTeamPlayer2Id = string.Empty;
             CurrentPlayerId = string.Empty;
-
-            placementStrategies = new Dictionary<string, IShipPlacementStrategy>
-            {
-                { "Random", new RandomPlacementStrategy() },
-                { "Edge", new EdgePlacementStrategy() },
-                { "Spaced", new SpacedPlacementStrategy() }
-            };
+            
+            //placementStrategies = new Dictionary<string, IShipPlacementStrategy>
+            //{
+            //    { "Random", new RandomPlacementStrategy() },
+            //    { "Edge", new EdgePlacementStrategy() },
+            //    { "Spaced", new SpacedPlacementStrategy() }
+            //};
 
             _turnHandler = new BattleshipsTurnHandler(this);
         }
@@ -124,8 +127,8 @@ namespace SharedLibrary
         public void PlaceShips()
         {
             // Use the selected strategies for each team
-            placementStrategies[teamAStrategy].PlaceShips(ATeamBoard, _levelFactory.GetShips());
-            placementStrategies[teamBStrategy].PlaceShips(BTeamBoard, _levelFactory.GetShips());
+            ATeamStrategyExpression.PlaceShips(ATeamBoard, _levelFactory.GetShips());
+            BTeamStrategyExpression.PlaceShips(BTeamBoard, _levelFactory.GetShips());
 
             // Display ship counts for both teams
             Console.WriteLine("\nTeam A Ships:");
@@ -268,13 +271,19 @@ namespace SharedLibrary
         // Add new method to set team strategy
         public void SetTeamStrategy(string team, string strategy)
         {
-            if (placementStrategies.ContainsKey(strategy))
+            if (team == "Team A")
             {
-                if (team == "Team A")
-                    teamAStrategy = strategy;
-                else if (team == "Team B")
-                    teamBStrategy = strategy;
+                ATeamStrategyExpression = StrategyFactory.Create(strategy);
             }
+            else if (team == "Team B")
+            {
+                BTeamStrategyExpression = StrategyFactory.Create(strategy);
+            }
+        }
+
+        public LevelFactory GetLevelFactory()
+        {
+            return this._levelFactory;
         }
     }
 }
