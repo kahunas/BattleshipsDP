@@ -15,16 +15,23 @@
         <h1 style="color: green;">@WinnerTeam Wins!</h1>
     }
 
-    <div>
-        <h3>Player Information</h3>
-        <p>Name: @PlayerName</p>
-        <p>Connection ID: @PlayerState.HubConnection.ConnectionId</p>
-        <p>Team: @PlayerTeam</p>
-        @if (isPlayerTurn)
-        {
-            <h2 style="color: blue;">Your turn!</h2>
-        }
-    </div>
+    @if (PlayerState.HubConnection is not null)
+    {
+        <h2>Game Controls</h2>
+        <button @onclick="StopGame">Stop</button>
+        <button @onclick="PlayGame" disabled="@(!isGameStopped)">Play</button>
+
+        <div>
+            <h3>Player Information</h3>
+            <p>Name: @PlayerName</p>
+            <p>Connection ID: @PlayerState.HubConnection.ConnectionId</p>
+            <p>Team: @PlayerTeam</p>
+            @if (isPlayerTurn)
+            {
+                <h2 style="color: blue;">Your turn!</h2>
+            }
+        </div>
+    }
 
     @if (!battleStarted)
     {
@@ -204,8 +211,60 @@
 
     private CommandInvoker CommandInvoker = new CommandInvoker();
 
+    private GameState gameState;
+    private GameStateMemento savedState;
+    private bool isGameStopped = false;
+
+
+    private async Task StopGame()
+    {
+        // Save the game state
+        gameState = new GameState(TeamCells, EnemyCells, isPlayerTurn, PlayerState.HubConnection.ConnectionId);
+        savedState = gameState.SaveState();
+        isGameStopped = true;
+
+        Console.WriteLine("Game state saved.");
+    }
+
+    private async Task PlayGame()
+    {
+        if (savedState != null)
+        {
+            // Restore the game state
+            gameState.RestoreState(savedState);
+            TeamCells = gameState.TeamCells;
+            EnemyCells = gameState.EnemyCells;
+            isPlayerTurn = gameState.IsPlayerTurn;
+
+            isGameStopped = false;
+            Console.WriteLine("Game state restored.");
+            StateHasChanged();
+        }
+    }
+
+    private List<List<GridCell>> InitializeGrid()
+    {
+        var grid = new List<List<GridCell>>();
+        for (int i = 0; i < 10; i++)
+        {
+            var row = new List<GridCell>();
+            for (int j = 0; j < 10; j++)
+            {
+                row.Add(new GridCell { Row = i, Col = j });
+            }
+            grid.Add(row);
+        }
+        return grid;
+    }
+
     protected override async Task OnInitializedAsync()
     {
+        if (PlayerState.HubConnection != null)
+        {
+            // Initialize game data here
+            TeamCells = InitializeGrid();
+            EnemyCells = InitializeGrid();
+        }
         if (IsHubConnectionActive())
         {
             gameStateContext = new GameStateContext(new PreparationState());
