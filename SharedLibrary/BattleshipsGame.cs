@@ -8,6 +8,7 @@ using SharedLibrary.Builder;
 using SharedLibrary.Factory;
 using SharedLibrary.Interpreter;
 using SharedLibrary.Strategies;
+using SharedLibrary.Visitor;
 
 namespace SharedLibrary
 {
@@ -30,26 +31,18 @@ namespace SharedLibrary
         public bool GameStarted { get; set; } = false;
         public bool GameOver { get; set; } = false;
         public int boardSize;
-        //private List<(Ship, Square)> ATeamShips { get; set; }
-        //private List<(Ship, Square)> BTeamShips { get; set; }
         private LevelFactory _levelFactory { get; set; }
 
         private List<ITurnObserver> turnObservers = new List<ITurnObserver>();
         private TurnHandler _turnHandler;
         IStrategyExpression ATeamStrategyExpression;
         IStrategyExpression BTeamStrategyExpression;
-        //private Dictionary<string, IShipPlacementStrategy> placementStrategies;
         private string teamAStrategy = "Random";
         private string teamBStrategy = "Random";
 
-        //List<(Ship, Square)> shipsToPlace = new List<(Ship, Square)>
-        //    {
-        //        (new Ship("Destroyer", 2), Square.Ship),
-        //        (new Ship("Submarine", 3), Square.Ship),
-        //        (new Ship("Cruiser", 3), Square.Ship),
-        //        (new Ship("Battleship", 4), Square.Ship),
-        //        (new Ship("Carrier", 5), Square.Ship)
-        //    };
+        public IVisitor TeamAStatistics;
+        public IVisitor TeamBStatistics;
+
 
         public BattleshipsGame()
         {
@@ -58,14 +51,8 @@ namespace SharedLibrary
             BTeamPlayer1Id = string.Empty;
             BTeamPlayer2Id = string.Empty;
             CurrentPlayerId = string.Empty;
-            
-            //placementStrategies = new Dictionary<string, IShipPlacementStrategy>
-            //{
-            //    { "Random", new RandomPlacementStrategy() },
-            //    { "Edge", new EdgePlacementStrategy() },
-            //    { "Spaced", new SpacedPlacementStrategy() }
-            //};
-
+            TeamAStatistics = new TeamAStatisticsVisitor();
+            TeamBStatistics = new TeamBStatisticsVisitor();
             _turnHandler = new BattleshipsTurnHandler(this);
         }
 
@@ -115,15 +102,9 @@ namespace SharedLibrary
             BTeamBoard = _levelFactory.GetBoard();
 
             boardSize = ATeamBoard.Size;
-            //ATeamBoard = ATeam.Board;
-            //BTeamBoard = BTeam.Board;
 
             // Set the first player to start the game
             CurrentPlayerId = ATeamPlayer1Id;
-
-            // Console.WriteLine("\n=== Initial Board States ===");
-            // ATeamBoard.DisplayBoardState();
-            // BTeamBoard.DisplayBoardState();
 
             _turnHandler.ExecuteTurn(CurrentPlayerId, -1, -1, "");
         }

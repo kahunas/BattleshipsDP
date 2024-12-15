@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharedLibrary.Visitor;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -6,7 +7,7 @@ using SharedLibrary.Iterator;
 
 namespace SharedLibrary
 {
-    public abstract class Board
+    public abstract class Board : IVisitable
     {
         public int Size { get; set; }
         public List<List<Square>> Grid { get; private set; }
@@ -149,6 +150,15 @@ namespace SharedLibrary
                 Console.WriteLine();
             }
             Console.WriteLine();
+        }
+
+        public void Accept(IVisitor visitor)
+        {
+            visitor.Visit(this);
+            foreach (var ship in Ships)
+            {
+                ship.Accept(visitor);
+            }
         }
     }
 

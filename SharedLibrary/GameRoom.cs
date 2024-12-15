@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharedLibrary.Visitor;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,6 +14,11 @@ namespace SharedLibrary
         public List<Player> Players { get; set; }
         public BattleshipsGame Game { get; set; }
         public string Difficulty { get; set; }
+
+        // Add these new statistics visitors
+        public TeamAStatisticsVisitor TeamAStatisticsVisitor { get; set; } = new TeamAStatisticsVisitor();
+        public TeamBStatisticsVisitor TeamBStatisticsVisitor { get; set; } = new TeamBStatisticsVisitor();
+
 
         public GameRoom(string roomId, string roomName, string difficulty = "Medium")
         {

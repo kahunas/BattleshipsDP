@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using SharedLibrary.Bridge;
 using SharedLibrary.Builder;
+using SharedLibrary.Visitor;
 
 namespace SharedLibrary
 {
-    public abstract class Ship
+    public abstract class Ship : IVisitable
     {
         public string Name { get; set; }
         public int Size { get; set; }
@@ -47,7 +48,7 @@ namespace SharedLibrary
             {
                 HitCoordinates.Add(coordinate);
                 Health--;
-
+                
                 Console.WriteLine($"Ship hit at ({row}, {col}) - Remaining health: {Health}");
                 Console.WriteLine($"Remaining Coordinates: {string.Join(", ", Coordinates)}");
                 Console.WriteLine($"Hit Coordinates: {string.Join(", ", HitCoordinates)}");
@@ -137,5 +138,7 @@ namespace SharedLibrary
         {
             return (GetLocationInfo(), Health, Size, Health > 0);
         }
+
+        public void Accept(IVisitor visitor) => visitor.Visit(this);
     }
 }

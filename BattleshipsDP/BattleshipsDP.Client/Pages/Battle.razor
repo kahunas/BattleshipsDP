@@ -1,6 +1,7 @@
 ﻿@using BattleshipsDP.Client.State
 @using SharedLibrary
 @using SharedLibrary.Composite;
+@using SharedLibrary.Visitor
 @page "/battle"
 
 @inject PlayerState PlayerState
@@ -27,8 +28,6 @@
     }
 </style>
 
-
-
 @if (PlayerState.HubConnection is not null && gameStateContext is not null)
 {
     <h2>@gameStateContext.GetMessage()</h2>
@@ -39,6 +38,18 @@
 
     @if (PlayerState.HubConnection is not null)
     {
+        <div style="margin-top: 20px; padding: 10px; border: 1px solid black;">
+            <h2>Team A Statistics</h2>
+            <p><strong>Total Hits:</strong> @teamAStatisticsVisitor.Hits</p>
+            <p><strong>Total Misses:</strong> @teamAStatisticsVisitor.Misses</p>
+            <p><strong>Total Player Actions:</strong> @teamAStatisticsVisitor.PlayerActions</p>
+
+            <h2>Team B Statistics</h2>
+            <p><strong>Total Hits:</strong> @teamBStatisticsVisitor.Hits</p>
+            <p><strong>Total Misses:</strong> @teamBStatisticsVisitor.Misses</p>
+            <p><strong>Total Player Actions:</strong> @teamBStatisticsVisitor.PlayerActions</p>
+        </div>
+
         <h2>Game Controls</h2>
         <button @onclick="StopGame">Stop</button>
         <button @onclick="PlayGame" disabled="@(!isGameStopped)">Play</button>
@@ -306,6 +317,8 @@
     private GameStateMemento savedState;
     private bool isGameStopped = false;
 
+    private TeamAStatisticsVisitor teamAStatisticsVisitor = new();
+    private TeamBStatisticsVisitor teamBStatisticsVisitor = new();
 
     private async Task StopGame()
     {
@@ -473,6 +486,16 @@
         }
         if (IsHubConnectionActive())
         {
+
+            PlayerState.HubConnection.On<TeamAStatisticsVisitor, TeamBStatisticsVisitor>("UpdateTeamStatistics", (teamAStats, teamBStats) =>
+            {
+                teamAStatisticsVisitor = teamAStats;
+                teamBStatisticsVisitor = teamBStats;
+
+                InvokeAsync(StateHasChanged);
+            });
+
+
             gameStateContext = new GameStateContext(new PreparationState());
             boardSize = await PlayerState.HubConnection.InvokeAsync<int>("GetBoardSize", PlayerState.HubConnection.ConnectionId);
             InitializeBoards();
@@ -659,27 +682,6 @@
             {
                 if (IsHubConnectionActive())
                 {
-                    //var shotBuilder = new ShotBuilder()
-                    //    .SetName(selectedShot)
-                    //    .SetSpread(new List<(int, int)> { (0, 0) });
-                    //
-                    //IShot shot = shotBuilder.Build();
-                    //
-                    //if (selectedShot == "Slasher")
-                    //{
-                    //    shot = new SplashDamageDecorator(shot, splashRadius: 1);
-                    //}
-                    //
-                    //var shotCoordinates = shot.ShotCoordinates(selectedRow.Value, selectedCol.Value);
-                    //
-                    //foreach (var (x, y) in shotCoordinates)
-                    //{
-                    //    if (x >= 0 && y >= 0 && x < EnemyCells.Count && y < EnemyCells[x].Count)
-                    //    {
-                    //        var shotCommand = new ShotCommand(x, y, selectedShot, true);
-                    //        CommandInvoker.ExecuteCommand(shotCommand, EnemyCells);
-                    //    }
-                    //}
 
                     await PlayerState.HubConnection.SendAsync("ShootAtOpponent", selectedRow.Value, selectedCol.Value, selectedShot);
 

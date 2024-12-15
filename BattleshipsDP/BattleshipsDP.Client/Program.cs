@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using SharedLibrary;
+using SharedLibrary.Visitor;
 
 namespace BattleshipsDP.Client
 {
