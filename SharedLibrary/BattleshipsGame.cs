@@ -121,6 +121,10 @@ namespace SharedLibrary
             // Set the first player to start the game
             CurrentPlayerId = ATeamPlayer1Id;
 
+            // Console.WriteLine("\n=== Initial Board States ===");
+            // ATeamBoard.DisplayBoardState();
+            // BTeamBoard.DisplayBoardState();
+
             _turnHandler.ExecuteTurn(CurrentPlayerId, -1, -1, "");
         }
 
@@ -221,51 +225,58 @@ namespace SharedLibrary
         public string ShootCell(int row, int col, string connectionId, out bool isGameOver)
         {
             isGameOver = false;
-
-            // Determine the attacking and defending teams
             string attackingTeam = GetTeamByPlayer(connectionId);
             var opponentBoard = attackingTeam == "Team A" ? BTeamBoard : ATeamBoard;
 
-            // Determine if it's a hit or miss
-            string result = null;
+            //Console.WriteLine($"\n=== Processing shot at [{row},{col}] by {attackingTeam} ===");
+
             if (boardSize > row && boardSize > col)
             {
-                // Check if cell has already been shot
-                if (opponentBoard.Grid[row][col] == Square.Hit || opponentBoard.Grid[row][col] == Square.Miss)
-                {
-                    result = "already_shot";
-                }
+                var iterator = opponentBoard.CreateIterator();
+                iterator.SetFilter(cell => cell.Row == row && cell.Col == col);
 
-                if (opponentBoard.Grid[row][col] == Square.Ship)
+                if (iterator.HasNext())
                 {
-                    opponentBoard.Grid[row][col] = Square.Hit;
-                    result = "hit";
+                    var targetCell = iterator.Next();
+                    //Console.WriteLine($"Iterator found cell at [{targetCell.Row},{targetCell.Col}] with state: {targetCell.State}");
 
-                    foreach (var ship in opponentBoard.Ships)
+                    if (targetCell.State == Square.Hit || targetCell.State == Square.Miss)
                     {
-                        if (ship.Hit(row, col))
+                        return "already_shot";
+                    }
+
+                    if (targetCell.State == Square.Ship)
+                    {
+                        opponentBoard.Grid[row][col] = Square.Hit;
+                        //Console.WriteLine("Hit confirmed!");
+
+                        foreach (var ship in opponentBoard.Ships)
                         {
-                            break;
+                            if (ship.Hit(row, col))
+                            {
+                                //Console.WriteLine($"Hit registered on ship: {ship.Name}");
+                                break;
+                            }
                         }
-                    }
 
-                    if (opponentBoard.AllShipsDestroyed())
-                    {
-                        isGameOver = true;
+                        if (!opponentBoard.CheckForHits())
+                        {
+                            isGameOver = true;
+                            //Console.WriteLine("Game Over - All ships destroyed!");
+                        }
+
+                        //opponentBoard.DisplayBoardState();
+                        return "hit";
                     }
-                }
-                else
-                {
+                    
                     opponentBoard.Grid[row][col] = Square.Miss;
-                    result = "miss";
+                    //Console.WriteLine("Miss recorded!");
+                    //opponentBoard.DisplayBoardState();
+                    return "miss";
                 }
             }
-            else
-            {
-                result = "miss";
-            }
 
-            return result;
+            return "miss";
         }
 
         // Add new method to set team strategy
