@@ -1,70 +1,62 @@
-// Add this to a new file BattleshipsTurnHandler.cs
-using SharedLibrary;
-using SharedLibrary.Bridge;
+using System;
 
-public class BattleshipsTurnHandler : TurnHandler
+namespace SharedLibrary.Template
 {
-    public BattleshipsTurnHandler(BattleshipsGame game) : base(game)
+    public class BattleshipsTurnHandler : TurnHandler
     {
-    }
+        private readonly BattleshipsGame game;
 
-    protected override bool ValidatePlayerTurn(string playerId)
-    {
-        return _game.CurrentPlayerId == playerId;
-    }
-
-    protected override bool ValidateShot(int row, int col, string shotType)
-    {
-        // Validate coordinates are within board bounds
-        if (row < 0 || row >= _game.boardSize || col < 0 || col >= _game.boardSize)
-            return false;
-
-        // Get the team and validate shot availability
-        var team = _game.GetTeamByPlayer(_game.CurrentPlayerId) == "Team A" ? _game.ATeam : _game.BTeam;
-        
-        if (shotType != "Simple")
+        public BattleshipsTurnHandler(BattleshipsGame game)
         {
-            IShotCollection shot = shotType switch
+            this.game = game;
+        }
+
+        protected override bool ValidatePlayer(string playerId)
+        {
+            return playerId == game.CurrentPlayerId && !game.GameOver;
+        }
+
+        protected override bool ValidateMove(int row, int col)
+        {
+            if (row == -1 && col == -1) return true; // Initial turn
+            return row >= 0 && row < game.boardSize && col >= 0 && col < game.boardSize;
+        }
+
+        protected override string ProcessMove(string playerId, int row, int col, string shotType)
+        {
+            if (row == -1 && col == -1) return "initial"; // Initial turn
+
+            bool isGameOver;
+            string result = game.ShootCell(row, col, playerId, out isGameOver);
+            game.GameOver = isGameOver;
+            return result;
+        }
+
+        protected override void UpdateGameState(string result)
+        {
+            if (result == "hit" || result == "miss")
             {
-                "Big" => new BigShot(),
-                "Piercer" => new PiercerShot(),
-                "Slasher" => new SlasherShot(),
-                "Cross" => new CrossShot(),
-                _ => null
-            };
-
-            if (shot == null || !team.TakeShot(shot.GetType()))
-                return false;
+                // Switch to next player's turn
+                if (game.CurrentPlayerId == game.ATeamPlayer1Id)
+                    game.CurrentPlayerId = game.ATeamPlayer2Id;
+                else if (game.CurrentPlayerId == game.BTeamPlayer1Id)
+                    game.CurrentPlayerId = game.BTeamPlayer2Id;
+                else if (game.CurrentPlayerId == game.ATeamPlayer2Id)
+                    game.CurrentPlayerId = game.BTeamPlayer1Id;
+                else if (game.CurrentPlayerId == game.BTeamPlayer2Id)
+                    game.CurrentPlayerId = game.ATeamPlayer1Id;
+            }
         }
 
-        return true;
-    }
-
-    protected override void ProcessShot(int row, int col, string shotType, string playerId)
-    {
-        bool isGameOver;
-        _game.ShootCell(row, col, playerId, out isGameOver);
-    }
-
-    protected override bool CheckGameOver()
-    {
-        if (_game.ATeamBoard.AllShipsDestroyed() || _game.BTeamBoard.AllShipsDestroyed())
+        protected override void ProcessNextTurn()
         {
-            _game.GameOver = true;
-            return true;
+            if (!game.GameOver)
+            {
+                foreach (var observer in observers)
+                {
+                    observer.UpdateTurn(game.CurrentPlayerId);
+                }
+            }
         }
-        return false;
-    }
-
-    protected override void UpdateNextPlayer()
-    {
-        if (_game.CurrentPlayerId == _game.ATeamPlayer1Id)
-            _game.CurrentPlayerId = _game.ATeamPlayer2Id;
-        else if (_game.CurrentPlayerId == _game.ATeamPlayer2Id)
-            _game.CurrentPlayerId = _game.BTeamPlayer1Id;
-        else if (_game.CurrentPlayerId == _game.BTeamPlayer1Id)
-            _game.CurrentPlayerId = _game.BTeamPlayer2Id;
-        else if (_game.CurrentPlayerId == _game.BTeamPlayer2Id)
-            _game.CurrentPlayerId = _game.ATeamPlayer1Id;
     }
 }

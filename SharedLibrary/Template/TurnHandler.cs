@@ -1,64 +1,53 @@
-// Add this to a new file TurnHandler.cs
-using SharedLibrary;
+using System;
+using System.Collections.Generic;
 
-public abstract class TurnHandler
+namespace SharedLibrary.Template
 {
-    protected readonly BattleshipsGame _game;
-    protected readonly List<ITurnObserver> _observers;
-
-    protected TurnHandler(BattleshipsGame game)
+    public abstract class TurnHandler
     {
-        _game = game;
-        _observers = new List<ITurnObserver>();
-    }
+        protected List<ITurnObserver> observers = new List<ITurnObserver>();
 
-    // Template method that defines the algorithm's skeleton
-    public void ExecuteTurn(string playerId, int row, int col, string shotType)
-    {
-        if (!ValidatePlayerTurn(playerId))
-            return;
-
-        if (!ValidateShot(row, col, shotType))
-            return;
-
-        ProcessShot(row, col, shotType, playerId);
-
-        bool isGameOver = CheckGameOver();
-        
-        if (!isGameOver)
+        // Template method that defines the turn algorithm
+        public void ExecuteTurn(string playerId, int row, int col, string shotType)
         {
-            UpdateNextPlayer();
-            NotifyObservers();
+            if (!ValidatePlayer(playerId))
+            {
+                NotifyObservers($"Invalid player: {playerId}");
+                return;
+            }
+
+            if (!ValidateMove(row, col))
+            {
+                NotifyObservers($"Invalid move: ({row}, {col})");
+                return;
+            }
+
+            var result = ProcessMove(playerId, row, col, shotType);
+            UpdateGameState(result);
+            NotifyObservers(result);
+            ProcessNextTurn();
         }
-    }
 
-    // These are the steps that can vary between implementations
-    // These methods are abstract and must be implemented by the concrete classes | subclasses
-    protected abstract bool ValidatePlayerTurn(string playerId);
-    protected abstract bool ValidateShot(int row, int col, string shotType);
-    protected abstract void ProcessShot(int row, int col, string shotType, string playerId);
-    protected abstract bool CheckGameOver();
-    protected abstract void UpdateNextPlayer();
+        // Abstract methods to be implemented by concrete classes
+        protected abstract bool ValidatePlayer(string playerId);
+        protected abstract bool ValidateMove(int row, int col);
+        protected abstract string ProcessMove(string playerId, int row, int col, string shotType);
+        protected abstract void UpdateGameState(string result);
+        protected abstract void ProcessNextTurn();
 
-    // Common functionality
-    protected void NotifyObservers()
-    {
-        foreach (var observer in _observers)
+        // Observer pattern methods
+        public void RegisterObserver(ITurnObserver observer)
+            => observers.Add(observer);
+
+        public void UnregisterObserver(ITurnObserver observer)
+            => observers.Remove(observer);
+
+        protected virtual void NotifyObservers(string result)
         {
-            observer.UpdateTurn(_game.CurrentPlayerId);
+            foreach (var observer in observers)
+            {
+                observer.UpdateTurn(result);
+            }
         }
-    }
-
-    public void RegisterObserver(ITurnObserver observer)
-    {
-        if (!_observers.Contains(observer))
-        {
-            _observers.Add(observer);
-        }
-    }
-
-    public void UnregisterObserver(ITurnObserver observer)
-    {
-        _observers.Remove(observer);
     }
 }

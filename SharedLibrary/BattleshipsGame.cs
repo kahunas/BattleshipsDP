@@ -8,6 +8,7 @@ using SharedLibrary.Builder;
 using SharedLibrary.Factory;
 using SharedLibrary.Interpreter;
 using SharedLibrary.Strategies;
+using SharedLibrary.Template;
 
 namespace SharedLibrary
 {
