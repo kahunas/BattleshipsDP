@@ -489,15 +489,9 @@
 
             PlayerState.HubConnection.On<TeamAStatisticsVisitor, TeamBStatisticsVisitor>("UpdateTeamStatistics", (teamAStats, teamBStats) =>
             {
-                Console.WriteLine("received call from hub to update statistics.");
-                
-                Console.WriteLine($"TEAM A: \n {teamAStats.PlayerActions} {teamAStats.Hits} {teamAStats.Misses}");
-                Console.WriteLine($"TEAM B: \n {teamBStats.PlayerActions} {teamBStats.Hits} {teamBStats.Misses}");
-                // Update the team statistics directly
                 teamAStatisticsVisitor = teamAStats;
                 teamBStatisticsVisitor = teamBStats;
 
-                // Ensure Blazor is aware of state change
                 InvokeAsync(StateHasChanged);
             });
 
