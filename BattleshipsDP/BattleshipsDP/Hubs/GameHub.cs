@@ -9,6 +9,7 @@ using SharedLibrary.Composite;
 using System.IO;
 using SharedLibrary.Interpreter;
 using SharedLibrary.Visitor;
+using SharedLibrary.ChainOfResponsibility;
 
 namespace BattleshipsDP.Hubs
 {
@@ -181,6 +182,22 @@ namespace BattleshipsDP.Hubs
             }
         }
 
+        public ShotHandler CreateShotHandlerChain()
+        {
+            var simpleShotHandler = new SimpleShotHandler();
+            var bigShotHandler = new BigShotHandler();
+            var slasherShotHandler = new SlasherShotHandler();
+            var piercerShotHandler = new PiercerShotHandler();
+            var crossShotHandler = new CrossShotHandler();
+
+            simpleShotHandler.SetNext(bigShotHandler);
+            bigShotHandler.SetNext(slasherShotHandler);
+            slasherShotHandler.SetNext(piercerShotHandler);
+            piercerShotHandler.SetNext(crossShotHandler);
+
+            return simpleShotHandler;
+        }
+
         public async Task ShootAtOpponent(int row, int col, string type)
         {
             var connectionId = Context.ConnectionId;
@@ -188,31 +205,8 @@ namespace BattleshipsDP.Hubs
             IShotCollection shot;
             if (room == null || !room.Game.GameStarted || room.Game.GameOver) return;
 
-            // Determine the shot type
-            if (type == "Simple")
-            {
-                shot = new SimpleShot();
-            }
-            else if (type == "Big")
-            {
-                shot = new BigShot();
-            }
-            else if (type == "Slasher")
-            {
-                shot = new SlasherShot();
-            }
-            else if (type == "Piercer")
-            {
-                shot = new PiercerShot();
-            }
-            else if (type == "Cross")
-            {
-                shot = new CrossShot();
-            }
-            else
-            {
-                shot = null;
-            }
+            var shotHandler = CreateShotHandlerChain();
+            shot = shotHandler.Handle(type);
 
             if (room.Game.CurrentPlayerId != connectionId)
             {
@@ -287,7 +281,6 @@ namespace BattleshipsDP.Hubs
             opponentBoard.Accept(teamName == "Team A" ? room.TeamAStatisticsVisitor : room.TeamBStatisticsVisitor);
 
             await UpdateTeamStatistics(room.TeamAStatisticsVisitor, room.TeamBStatisticsVisitor);
-            //await Clients.All.SendAsync("UpdateTeamStatistics", room.TeamAStatisticsVisitor, room.TeamBStatisticsVisitor);
         }
 
         public async Task UpdateTeamStatistics(TeamAStatisticsVisitor teamAStats, TeamBStatisticsVisitor teamBStats)
