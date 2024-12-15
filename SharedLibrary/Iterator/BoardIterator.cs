@@ -37,7 +37,7 @@ namespace SharedLibrary.Iterator
                 throw new InvalidOperationException("No more elements to iterate");
 
             var cell = GridCell.Create(_currentRow, _currentCol, _board.Grid[_currentRow][_currentCol]);
-            Console.WriteLine($"Iterator: Visiting cell [{_currentRow},{_currentCol}] with state {cell.State}");
+            //Console.WriteLine($"Iterator: Visiting cell [{_currentRow},{_currentCol}] with state {cell.State}");
             
             _currentCol++;
             if (_currentCol >= _board.Size)

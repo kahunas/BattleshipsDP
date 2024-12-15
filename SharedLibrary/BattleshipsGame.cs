@@ -121,9 +121,9 @@ namespace SharedLibrary
             // Set the first player to start the game
             CurrentPlayerId = ATeamPlayer1Id;
 
-            Console.WriteLine("\n=== Initial Board States ===");
-            ATeamBoard.DisplayBoardState();
-            BTeamBoard.DisplayBoardState();
+            // Console.WriteLine("\n=== Initial Board States ===");
+            // ATeamBoard.DisplayBoardState();
+            // BTeamBoard.DisplayBoardState();
 
             _turnHandler.ExecuteTurn(CurrentPlayerId, -1, -1, "");
         }
@@ -228,7 +228,7 @@ namespace SharedLibrary
             string attackingTeam = GetTeamByPlayer(connectionId);
             var opponentBoard = attackingTeam == "Team A" ? BTeamBoard : ATeamBoard;
 
-            Console.WriteLine($"\n=== Processing shot at [{row},{col}] by {attackingTeam} ===");
+            //Console.WriteLine($"\n=== Processing shot at [{row},{col}] by {attackingTeam} ===");
 
             if (boardSize > row && boardSize > col)
             {
@@ -238,7 +238,7 @@ namespace SharedLibrary
                 if (iterator.HasNext())
                 {
                     var targetCell = iterator.Next();
-                    Console.WriteLine($"Iterator found cell at [{targetCell.Row},{targetCell.Col}] with state: {targetCell.State}");
+                    //Console.WriteLine($"Iterator found cell at [{targetCell.Row},{targetCell.Col}] with state: {targetCell.State}");
 
                     if (targetCell.State == Square.Hit || targetCell.State == Square.Miss)
                     {
@@ -248,13 +248,13 @@ namespace SharedLibrary
                     if (targetCell.State == Square.Ship)
                     {
                         opponentBoard.Grid[row][col] = Square.Hit;
-                        Console.WriteLine("Hit confirmed!");
+                        //Console.WriteLine("Hit confirmed!");
 
                         foreach (var ship in opponentBoard.Ships)
                         {
                             if (ship.Hit(row, col))
                             {
-                                Console.WriteLine($"Hit registered on ship: {ship.Name}");
+                                //Console.WriteLine($"Hit registered on ship: {ship.Name}");
                                 break;
                             }
                         }
@@ -262,16 +262,16 @@ namespace SharedLibrary
                         if (!opponentBoard.CheckForHits())
                         {
                             isGameOver = true;
-                            Console.WriteLine("Game Over - All ships destroyed!");
+                            //Console.WriteLine("Game Over - All ships destroyed!");
                         }
 
-                        opponentBoard.DisplayBoardState();
+                        //opponentBoard.DisplayBoardState();
                         return "hit";
                     }
                     
                     opponentBoard.Grid[row][col] = Square.Miss;
-                    Console.WriteLine("Miss recorded!");
-                    opponentBoard.DisplayBoardState();
+                    //Console.WriteLine("Miss recorded!");
+                    //opponentBoard.DisplayBoardState();
                     return "miss";
                 }
             }
