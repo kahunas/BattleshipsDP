@@ -1,10 +1,13 @@
 ﻿@using BattleshipsDP.Client.State
 @using SharedLibrary
 @using SharedLibrary.Composite;
+@using SharedLibrary.Visitor
 @page "/battle"
 
 @inject PlayerState PlayerState
 @inject NavigationManager Navigation
+@inject TeamAStatisticsVisitor teamAStatisticsVisitor
+@inject TeamBStatisticsVisitor teamBStatisticsVisitor
 @rendermode @(new InteractiveWebAssemblyRenderMode(false))
 
 <style>
@@ -27,8 +30,6 @@
     }
 </style>
 
-
-
 @if (PlayerState.HubConnection is not null && gameStateContext is not null)
 {
     <h2>@gameStateContext.GetMessage()</h2>
@@ -39,6 +40,18 @@
 
     @if (PlayerState.HubConnection is not null)
     {
+        <div style="margin-top: 20px; padding: 10px; border: 1px solid black;">
+            <h2>Team A Statistics</h2>
+            <p><strong>Total Hits:</strong> @teamAStatisticsVisitor.Hits</p>
+            <p><strong>Total Misses:</strong> @teamAStatisticsVisitor.Misses</p>
+            <p><strong>Total Player Actions:</strong> @teamAStatisticsVisitor.PlayerActions</p>
+
+            <h2>Team B Statistics</h2>
+            <p><strong>Total Hits:</strong> @teamBStatisticsVisitor.Hits</p>
+            <p><strong>Total Misses:</strong> @teamBStatisticsVisitor.Misses</p>
+            <p><strong>Total Player Actions:</strong> @teamBStatisticsVisitor.PlayerActions</p>
+        </div>
+
         <h2>Game Controls</h2>
         <button @onclick="StopGame">Stop</button>
         <button @onclick="PlayGame" disabled="@(!isGameStopped)">Play</button>
