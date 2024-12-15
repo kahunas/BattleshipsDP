@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using SharedLibrary.Iterator;
 
 namespace SharedLibrary
 {
@@ -92,6 +93,62 @@ namespace SharedLibrary
             }
 
             return PlaceShip(ship, coordinates);
+        }
+
+        public IGridIterator CreateIterator()
+        {
+            return new BoardIterator(this);
+        }
+
+        public bool CheckForHits()
+        {
+            var iterator = CreateIterator();
+            iterator.SetFilter(cell => cell.State == Square.Ship);
+
+            while (iterator.HasNext())
+            {
+                var cell = iterator.Next();
+                foreach (var ship in Ships)
+                {
+                    if (ship.Coordinates.Contains((cell.Row, cell.Col)))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        public void ProcessCells(Action<GridCell> action, Func<GridCell, bool> filter = null)
+        {
+            var iterator = CreateIterator();
+            if (filter != null)
+            {
+                iterator.SetFilter(filter);
+            }
+
+            while (iterator.HasNext())
+            {
+                var cell = iterator.Next();
+                action(cell);
+            }
+        }
+
+        public void DisplayBoardState()
+        {
+            Console.WriteLine("\nBoard State (using Iterator):");
+            Console.WriteLine("  " + string.Join(" ", Enumerable.Range(0, Size).Select(i => i.ToString("D2"))));
+            
+            for (int row = 0; row < Size; row++)
+            {
+                Console.Write($"{row:D2} ");
+                for (int col = 0; col < Size; col++)
+                {
+                    Console.Write(Grid[row][col].GetDescription() + " ");
+                }
+                Console.WriteLine();
+            }
+            Console.WriteLine();
         }
     }
 
