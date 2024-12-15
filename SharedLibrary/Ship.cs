@@ -48,7 +48,7 @@ namespace SharedLibrary
             {
                 HitCoordinates.Add(coordinate);
                 Health--;
-
+                
                 Console.WriteLine($"Ship hit at ({row}, {col}) - Remaining health: {Health}");
                 Console.WriteLine($"Remaining Coordinates: {string.Join(", ", Coordinates)}");
                 Console.WriteLine($"Hit Coordinates: {string.Join(", ", HitCoordinates)}");

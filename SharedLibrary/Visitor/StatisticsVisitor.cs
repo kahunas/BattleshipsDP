@@ -8,67 +8,96 @@ namespace SharedLibrary.Visitor
 {
     public class TeamAStatisticsVisitor : IVisitor
     {
-        public int Hits { get; private set; } = 0;
-        public int Misses { get; private set; } = 0;
-        public int PlayerActions { get; private set; } = 0;
+        public int Hits { get; set; }
+        public int Misses { get; set; }
+        public int PlayerActions { get; set; }
 
-        public Dictionary<string, int> PlayerActionCount { get; private set; } = new Dictionary<string, int>();
+
+        public TeamAStatisticsVisitor() {
+            Hits = 0;
+            Misses = 0;
+            PlayerActions = 0;
+        }
+        public TeamAStatisticsVisitor(int hits, int misses, int playerActions)
+        {
+            Hits = hits;
+            Misses = misses;
+            PlayerActions = playerActions;
+        }
 
         public void Visit(Board board)
         {
-            // Optionally, track board-level statistics here
+            int miss = 0;
+            foreach (var row in board.Grid)
+            {
+                foreach (var cell in row)
+                {
+                    if (cell == Square.Miss)
+                    {
+                        miss += 1;
+                    }
+                }
+            }
+            Misses = miss;
+            Hits = 0;
         }
 
         public void Visit(Ship ship)
         {
-            if (ship.Health < ship.Size && ship.Health != 0)
-            {
-                Hits++;
-            }
+            Hits += ship.Size - ship.Health;
         }
 
         public void Visit(Player player)
         {
-            if (!PlayerActionCount.ContainsKey(player.Name))
-            {
-                PlayerActionCount[player.Name] = 0;
-            }
-
-            PlayerActionCount[player.Name] += player.ActionsCount;
-            PlayerActions += player.ActionsCount;
+            this.PlayerActions++;
         }
     }
 
     public class TeamBStatisticsVisitor : IVisitor
     {
-        public int Hits { get; private set; } = 0;
-        public int Misses { get; private set; } = 0;
-        public int PlayerActions { get; private set; } = 0;
+        public int Hits { get; set; }
+        public int Misses { get; set; }
+        public int PlayerActions { get; set; }
 
-        public Dictionary<string, int> PlayerActionCount { get; private set; } = new Dictionary<string, int>();
+        public TeamBStatisticsVisitor()
+        {
+            Hits = 0;
+            Misses = 0;
+            PlayerActions = 0;
+        }
+
+        public TeamBStatisticsVisitor(int hits, int misses, int playerActions)
+        {
+            Hits = hits;
+            Misses = misses;
+            PlayerActions = playerActions;
+        }
 
         public void Visit(Board board)
         {
-            // Optionally, track board-level statistics here
+            int miss = 0;
+            foreach (var row in board.Grid)
+            {
+                foreach (var cell in row)
+                {
+                    if (cell == Square.Miss)
+                    {
+                        miss += 1;
+                    }
+                }
+            }
+            Misses = miss;
+            Hits = 0;
         }
 
         public void Visit(Ship ship)
         {
-            if (ship.Health < ship.Size && ship.Health != 0)
-            {
-                Hits++;
-            }
+            Hits += ship.Size - ship.Health;
         }
 
         public void Visit(Player player)
         {
-            if (!PlayerActionCount.ContainsKey(player.Name))
-            {
-                PlayerActionCount[player.Name] = 0;
-            }
-
-            PlayerActionCount[player.Name] += player.ActionsCount;
-            PlayerActions += player.ActionsCount;
+            this.PlayerActions++;
         }
     }
 

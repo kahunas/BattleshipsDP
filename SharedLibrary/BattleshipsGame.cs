@@ -40,8 +40,8 @@ namespace SharedLibrary
         private string teamAStrategy = "Random";
         private string teamBStrategy = "Random";
 
-        private IVisitor TeamAStatistics;
-        private IVisitor TeamBStatistics;
+        public IVisitor TeamAStatistics;
+        public IVisitor TeamBStatistics;
 
 
         public BattleshipsGame()
@@ -102,15 +102,9 @@ namespace SharedLibrary
             BTeamBoard = _levelFactory.GetBoard();
 
             boardSize = ATeamBoard.Size;
-            //ATeamBoard = ATeam.Board;
-            //BTeamBoard = BTeam.Board;
 
             // Set the first player to start the game
             CurrentPlayerId = ATeamPlayer1Id;
-
-            // Console.WriteLine("\n=== Initial Board States ===");
-            // ATeamBoard.DisplayBoardState();
-            // BTeamBoard.DisplayBoardState();
 
             _turnHandler.ExecuteTurn(CurrentPlayerId, -1, -1, "");
         }

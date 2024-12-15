@@ -8,6 +8,7 @@ using SharedLibrary.Composite;
 //using BattleshipsDP.Client.Pages;
 using System.IO;
 using SharedLibrary.Interpreter;
+using SharedLibrary.Visitor;
 
 namespace BattleshipsDP.Hubs
 {
@@ -187,15 +188,16 @@ namespace BattleshipsDP.Hubs
             IShotCollection shot;
             if (room == null || !room.Game.GameStarted || room.Game.GameOver) return;
 
-            if(type == "Simple")
+            // Determine the shot type
+            if (type == "Simple")
             {
                 shot = new SimpleShot();
             }
-            else if(type == "Big")
+            else if (type == "Big")
             {
                 shot = new BigShot();
             }
-            else if (type =="Slasher")
+            else if (type == "Slasher")
             {
                 shot = new SlasherShot();
             }
@@ -221,11 +223,14 @@ namespace BattleshipsDP.Hubs
             var player = room.Players.FirstOrDefault(p => p.ConnectionId == connectionId);
             var game = room.Game;
             var teamName = game.GetTeamByPlayer(connectionId);
-            Team team = room.Game.GetTeamByPlayer(connectionId) == "Team A" ? room.Game.ATeam : room.Game.BTeam; ;
+            Team team = game.GetTeamByPlayer(connectionId) == "Team A" ? game.ATeam : game.BTeam;
 
-            //var shot = player?.(shotType);
+            // **TRIGGER 1: Count the player's action as soon as they attempt to shoot**
+            player?.Accept(teamName == "Team A" ? room.TeamAStatisticsVisitor : room.TeamBStatisticsVisitor);
+
+            // Determine if the player has the required shot available
             bool shotmade;
-            if(shot.GetType().Equals(new SimpleShot().GetType()))
+            if (shot.GetType().Equals(new SimpleShot().GetType()))
             {
                 shotmade = true;
             }
@@ -233,12 +238,14 @@ namespace BattleshipsDP.Hubs
             {
                 shotmade = team.TakeShot(shot.GetType());
             }
+
             if (shot == null || !shotmade)
             {
                 await Clients.Client(connectionId).SendAsync("InvalidShotType");
                 room.Game.ExecuteTurn(connectionId, row, col, type);
                 return;
             }
+
             if (shotmade)
             {
                 var coordinates = shot.GetSpread(row, col);
@@ -274,6 +281,18 @@ namespace BattleshipsDP.Hubs
                     room.Game.ExecuteTurn(connectionId, row, col, type);
                 }
             }
+
+            // **TRIGGER 2: Call the Board's accept method to update statistics**
+            var opponentBoard = teamName == "Team A" ? game.BTeamBoard : game.ATeamBoard;
+            opponentBoard.Accept(teamName == "Team A" ? room.TeamAStatisticsVisitor : room.TeamBStatisticsVisitor);
+
+            await UpdateTeamStatistics(room.TeamAStatisticsVisitor, room.TeamBStatisticsVisitor);
+            //await Clients.All.SendAsync("UpdateTeamStatistics", room.TeamAStatisticsVisitor, room.TeamBStatisticsVisitor);
+        }
+
+        public async Task UpdateTeamStatistics(TeamAStatisticsVisitor teamAStats, TeamBStatisticsVisitor teamBStats)
+        {
+            await Clients.All.SendAsync("UpdateTeamStatistics", teamAStats, teamBStats);
         }
 
         public async Task NotifyBigRemaining(GameRoom room, string connectionId)

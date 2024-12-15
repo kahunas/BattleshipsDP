@@ -6,8 +6,6 @@
 
 @inject PlayerState PlayerState
 @inject NavigationManager Navigation
-@inject TeamAStatisticsVisitor teamAStatisticsVisitor
-@inject TeamBStatisticsVisitor teamBStatisticsVisitor
 @rendermode @(new InteractiveWebAssemblyRenderMode(false))
 
 <style>
@@ -319,6 +317,8 @@
     private GameStateMemento savedState;
     private bool isGameStopped = false;
 
+    private TeamAStatisticsVisitor teamAStatisticsVisitor = new();
+    private TeamBStatisticsVisitor teamBStatisticsVisitor = new();
 
     private async Task StopGame()
     {
@@ -486,6 +486,22 @@
         }
         if (IsHubConnectionActive())
         {
+
+            PlayerState.HubConnection.On<TeamAStatisticsVisitor, TeamBStatisticsVisitor>("UpdateTeamStatistics", (teamAStats, teamBStats) =>
+            {
+                Console.WriteLine("received call from hub to update statistics.");
+                
+                Console.WriteLine($"TEAM A: \n {teamAStats.PlayerActions} {teamAStats.Hits} {teamAStats.Misses}");
+                Console.WriteLine($"TEAM B: \n {teamBStats.PlayerActions} {teamBStats.Hits} {teamBStats.Misses}");
+                // Update the team statistics directly
+                teamAStatisticsVisitor = teamAStats;
+                teamBStatisticsVisitor = teamBStats;
+
+                // Ensure Blazor is aware of state change
+                InvokeAsync(StateHasChanged);
+            });
+
+
             gameStateContext = new GameStateContext(new PreparationState());
             boardSize = await PlayerState.HubConnection.InvokeAsync<int>("GetBoardSize", PlayerState.HubConnection.ConnectionId);
             InitializeBoards();
@@ -672,27 +688,6 @@
             {
                 if (IsHubConnectionActive())
                 {
-                    //var shotBuilder = new ShotBuilder()
-                    //    .SetName(selectedShot)
-                    //    .SetSpread(new List<(int, int)> { (0, 0) });
-                    //
-                    //IShot shot = shotBuilder.Build();
-                    //
-                    //if (selectedShot == "Slasher")
-                    //{
-                    //    shot = new SplashDamageDecorator(shot, splashRadius: 1);
-                    //}
-                    //
-                    //var shotCoordinates = shot.ShotCoordinates(selectedRow.Value, selectedCol.Value);
-                    //
-                    //foreach (var (x, y) in shotCoordinates)
-                    //{
-                    //    if (x >= 0 && y >= 0 && x < EnemyCells.Count && y < EnemyCells[x].Count)
-                    //    {
-                    //        var shotCommand = new ShotCommand(x, y, selectedShot, true);
-                    //        CommandInvoker.ExecuteCommand(shotCommand, EnemyCells);
-                    //    }
-                    //}
 
                     await PlayerState.HubConnection.SendAsync("ShootAtOpponent", selectedRow.Value, selectedCol.Value, selectedShot);
 
